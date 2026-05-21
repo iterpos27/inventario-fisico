@@ -1,9 +1,20 @@
-<footer class="app-footer mt-auto">
-    <div class="container d-flex flex-column flex-sm-row justify-content-between gap-1">
-        <span><?= APP_NAME ?></span>
-        <span>Version <?= APP_VERSION ?></span>
+<?php if (!empty($layoutStarted)): ?>
+            <footer class="app-footer mt-auto">
+                <div class="container-fluid d-flex flex-column flex-sm-row justify-content-between gap-1">
+                    <span><?= APP_NAME ?></span>
+                    <span>Version <?= APP_VERSION ?></span>
+                </div>
+            </footer>
+        </div>
     </div>
-</footer>
+<?php else: ?>
+    <footer class="app-footer mt-auto">
+        <div class="container d-flex flex-column flex-sm-row justify-content-between gap-1">
+            <span><?= APP_NAME ?></span>
+            <span>Version <?= APP_VERSION ?></span>
+        </div>
+    </footer>
+<?php endif; ?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
