@@ -1,0 +1,62 @@
+CREATE DATABASE IF NOT EXISTS centro_ruliman_inventario
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE centro_ruliman_inventario;
+
+CREATE TABLE IF NOT EXISTS usuarios (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(120) NOT NULL,
+  usuario VARCHAR(60) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  rol ENUM('admin', 'usuario') NOT NULL DEFAULT 'usuario',
+  estado TINYINT(1) NOT NULL DEFAULT 1,
+  fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS productos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo VARCHAR(80) NOT NULL UNIQUE,
+  descripcion VARCHAR(255) NOT NULL,
+  estado TINYINT(1) NOT NULL DEFAULT 1,
+  fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_productos_descripcion (descripcion),
+  INDEX idx_productos_estado (estado)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS conteos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT UNSIGNED NOT NULL,
+  nombre_conteo VARCHAR(160) NOT NULL,
+  estado ENUM('borrador', 'finalizado') NOT NULL DEFAULT 'borrador',
+  fecha_inicio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  fecha_finalizacion DATETIME NULL,
+  archivo_excel VARCHAR(255) NULL,
+  CONSTRAINT fk_conteos_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+  INDEX idx_conteos_estado (estado),
+  INDEX idx_conteos_usuario (usuario_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS conteo_detalle (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  conteo_id INT UNSIGNED NOT NULL,
+  producto_id INT UNSIGNED NOT NULL,
+  codigo VARCHAR(80) NOT NULL,
+  descripcion VARCHAR(255) NOT NULL,
+  cantidad DECIMAL(12,2) NOT NULL DEFAULT 0,
+  fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_detalle_conteo FOREIGN KEY (conteo_id) REFERENCES conteos(id) ON DELETE CASCADE,
+  CONSTRAINT fk_detalle_producto FOREIGN KEY (producto_id) REFERENCES productos(id),
+  UNIQUE KEY uq_conteo_producto (conteo_id, producto_id),
+  INDEX idx_detalle_codigo (codigo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO usuarios (nombre, usuario, password, rol, estado)
+VALUES (
+  'Administrador',
+  'admin',
+  '$2y$10$4bG34LfURR5Ua9DRXo.UneDnfgM6fAF/xyKi6jSEqhm2A8psnHPOC',
+  'admin',
+  1
+)
+ON DUPLICATE KEY UPDATE usuario = usuario;

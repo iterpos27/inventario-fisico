@@ -1,0 +1,77 @@
+<?php
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_login();
+
+header('Content-Type: application/json; charset=utf-8');
+
+$payload = json_decode(file_get_contents('php://input'), true);
+if (!is_array($payload) || !verify_csrf($payload['csrf_token'] ?? null)) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'message' => 'Solicitud invalida']);
+    exit;
+}
+
+$nombre = trim((string) ($payload['nombre_conteo'] ?? ''));
+$items = $payload['items'] ?? [];
+$conteoId = (int) ($payload['conteo_id'] ?? 0);
+
+if ($nombre === '' || !is_array($items) || count($items) === 0) {
+    http_response_code(422);
+    echo json_encode(['ok' => false, 'message' => 'Ingrese nombre y productos']);
+    exit;
+}
+
+try {
+    $pdo->beginTransaction();
+
+    if ($conteoId > 0) {
+        $sql = "SELECT id FROM conteos WHERE id = ? AND estado = 'borrador'";
+        $params = [$conteoId];
+        if (current_user_role() !== 'admin') {
+            $sql .= ' AND usuario_id = ?';
+            $params[] = (int) $_SESSION['usuario_id'];
+        }
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        if (!$stmt->fetch()) {
+            throw new RuntimeException('Conteo no disponible');
+        }
+        $stmt = $pdo->prepare('UPDATE conteos SET nombre_conteo = ? WHERE id = ?');
+        $stmt->execute([$nombre, $conteoId]);
+        $pdo->prepare('DELETE FROM conteo_detalle WHERE conteo_id = ?')->execute([$conteoId]);
+    } else {
+        $stmt = $pdo->prepare('INSERT INTO conteos (usuario_id, nombre_conteo, estado, fecha_inicio) VALUES (?, ?, "borrador", NOW())');
+        $stmt->execute([(int) $_SESSION['usuario_id'], $nombre]);
+        $conteoId = (int) $pdo->lastInsertId();
+    }
+
+    $stmtProducto = $pdo->prepare('SELECT codigo, descripcion FROM productos WHERE id = ? AND estado = 1');
+    $stmtDetalle = $pdo->prepare(
+        'INSERT INTO conteo_detalle (conteo_id, producto_id, codigo, descripcion, cantidad)
+         VALUES (?, ?, ?, ?, ?)'
+    );
+
+    foreach ($items as $item) {
+        $productoId = (int) ($item['producto_id'] ?? 0);
+        $cantidad = (float) ($item['cantidad'] ?? 0);
+        if ($productoId <= 0 || $cantidad < 0) {
+            continue;
+        }
+        $stmtProducto->execute([$productoId]);
+        $producto = $stmtProducto->fetch();
+        if (!$producto) {
+            continue;
+        }
+        $stmtDetalle->execute([$conteoId, $productoId, $producto['codigo'], $producto['descripcion'], $cantidad]);
+    }
+
+    $pdo->commit();
+    echo json_encode(['ok' => true, 'conteo_id' => $conteoId, 'message' => 'Borrador guardado']);
+} catch (Throwable $exception) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'message' => 'No se pudo guardar el borrador']);
+}

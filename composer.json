@@ -1,0 +1,12 @@
+{
+  "name": "centro-ruliman/inventario",
+  "description": "CENTRO DEL RULIMÁN - Sistema de Conteo e Inventario",
+  "type": "project",
+  "require": {
+    "php": ">=8.0",
+    "phpoffice/phpspreadsheet": "^2.2"
+  },
+  "config": {
+    "sort-packages": true
+  }
+}
