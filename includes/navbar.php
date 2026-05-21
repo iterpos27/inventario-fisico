@@ -28,7 +28,7 @@ $layoutStarted = true;
 <div class="app-layout">
     <aside class="app-sidebar">
         <a class="sidebar-brand" href="<?= BASE_URL ?>/dashboard.php">
-            <img src="<?= $navLogoPath ?>" alt="Logo" class="sidebar-logo" onerror="this.style.display='none'">
+            <img src="<?= $navLogoPath ?>" alt="Logo" class="sidebar-logo" width="54" height="54" onerror="this.style.display='none'">
             <span>
                 <strong><?= APP_NAME ?></strong>
                 <small>SISTEMA DE INVENTARIO</small>

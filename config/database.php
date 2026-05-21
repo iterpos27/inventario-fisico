@@ -12,7 +12,7 @@ define('UPLOADS_PATH', dirname(__DIR__) . DIRECTORY_SEPARATOR . 'uploads');
 $dbHost = 'localhost';
 $dbName = 'centro_ruliman_inventario';
 $dbUser = 'root';
-$dbPass = '';
+$dbPass = 'admin';
 $dbCharset = 'utf8mb4';
 
 $dsn = "mysql:host={$dbHost};dbname={$dbName};charset={$dbCharset}";
