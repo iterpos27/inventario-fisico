@@ -51,7 +51,7 @@ require_once __DIR__ . '/includes/navbar.php';
     </div>
 
     <div class="quick-actions">
-        <a class="btn btn-primary btn-lg" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-plus-circle"></i> Nuevo conteo</a>
+        <a class="btn btn-primary btn-lg" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-plus-circle"></i> <?= current_user_role() === 'admin' ? 'Crear toma' : 'Seleccionar conteo' ?></a>
         <?php if (current_user_role() === 'admin'): ?>
             <a class="btn btn-outline-primary btn-lg" href="<?= BASE_URL ?>/importar_productos.php"><i class="bi bi-upload"></i> Importar productos</a>
         <?php endif; ?>

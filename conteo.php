@@ -6,6 +6,7 @@ require_login();
 $conteoId = (int) ($_GET['id'] ?? 0);
 $conteo = null;
 $detalles = [];
+$conteosDisponibles = [];
 $defaultYear = date('Y');
 $nextSequence = 1;
 $stmt = $pdo->prepare('SELECT nombre_conteo FROM conteos WHERE nombre_conteo LIKE ? ORDER BY id DESC LIMIT 100');
@@ -18,10 +19,10 @@ foreach ($stmt->fetchAll() as $row) {
 $defaultToma = $defaultYear . '-' . str_pad((string) $nextSequence, 3, '0', STR_PAD_LEFT);
 
 if ($conteoId > 0) {
-    $sql = 'SELECT * FROM conteos WHERE id = ?';
+    $sql = 'SELECT c.* FROM conteos c INNER JOIN usuarios u ON u.id = c.usuario_id WHERE c.id = ?';
     $params = [$conteoId];
     if (current_user_role() !== 'admin') {
-        $sql .= ' AND usuario_id = ?';
+        $sql .= " AND (c.usuario_id = ? OR u.rol = 'admin')";
         $params[] = (int) $_SESSION['usuario_id'];
     }
     $stmt = $pdo->prepare($sql);
@@ -38,6 +39,20 @@ if ($conteoId > 0) {
     $detalles = $stmt->fetchAll();
 }
 
+if (current_user_role() !== 'admin' && $conteoId === 0) {
+    $stmt = $pdo->prepare(
+        "SELECT c.id, c.nombre_conteo, c.fecha_inicio, u.nombre AS responsable, COUNT(d.id) AS lineas
+         FROM conteos c
+         INNER JOIN usuarios u ON u.id = c.usuario_id
+         LEFT JOIN conteo_detalle d ON d.conteo_id = c.id
+         WHERE c.estado = 'borrador' AND (c.usuario_id = ? OR u.rol = 'admin')
+         GROUP BY c.id, c.nombre_conteo, c.fecha_inicio, u.nombre
+         ORDER BY c.id DESC"
+    );
+    $stmt->execute([(int) $_SESSION['usuario_id']]);
+    $conteosDisponibles = $stmt->fetchAll();
+}
+
 $pageTitle = 'Conteo movil - ' . APP_NAME;
 $conteoJsVersion = file_exists(__DIR__ . '/assets/js/conteo.js')
     ? (string) filemtime(__DIR__ . '/assets/js/conteo.js')
@@ -49,15 +64,17 @@ require_once __DIR__ . '/includes/navbar.php';
     <div class="page-heading compact">
         <div>
             <p class="eyebrow">Conteo fisico</p>
-            <h1><?= $conteo ? 'Continuar conteo' : 'Nuevo conteo' ?></h1>
+            <h1><?= current_user_role() === 'admin' ? 'Crear toma fisica' : ($conteo ? 'Continuar conteo' : 'Seleccionar conteo') ?></h1>
         </div>
     </div>
 
     <input type="hidden" id="csrfToken" value="<?= csrf_token() ?>">
     <input type="hidden" id="conteoId" value="<?= (int) ($conteo['id'] ?? 0) ?>">
     <input type="hidden" id="conteoCreado" value="<?= $conteo ? '1' : '0' ?>">
+    <input type="hidden" id="nombreConteo" value="<?= e($conteo['nombre_conteo'] ?? '') ?>">
 
-    <section id="crearConteoPanel" class="content-panel mb-3 <?= $conteo ? 'd-none' : '' ?>">
+    <?php if (current_user_role() === 'admin' && !$conteo): ?>
+    <section id="crearConteoPanel" class="content-panel mb-3">
         <div class="section-title"><h2>Crear operacion de conteo</h2></div>
         <div class="row g-3">
             <div class="col-md-4">
@@ -73,10 +90,27 @@ require_once __DIR__ . '/includes/navbar.php';
                 <input class="form-control form-control-lg" id="fechaConteo" type="date" value="<?= e(date('Y-m-d')) ?>">
             </div>
         </div>
-        <input type="hidden" id="nombreConteo" value="<?= e($conteo['nombre_conteo'] ?? '') ?>">
         <div class="count-preview mt-3" id="vistaNombreConteo"></div>
         <button class="btn btn-primary btn-lg w-100 mt-3" id="crearConteo" type="button"><i class="bi bi-plus-circle"></i> Crear conteo</button>
     </section>
+    <?php endif; ?>
+
+    <?php if (current_user_role() !== 'admin' && !$conteo): ?>
+        <section class="content-panel mb-3">
+            <div class="section-title"><h2>Conteos disponibles</h2></div>
+            <div class="count-list">
+                <?php foreach ($conteosDisponibles as $disponible): ?>
+                    <a class="available-count" href="<?= BASE_URL ?>/conteo.php?id=<?= (int) $disponible['id'] ?>">
+                        <span><?= nl2br(e($disponible['nombre_conteo'])) ?></span>
+                        <small><?= (int) $disponible['lineas'] ?> lineas registradas</small>
+                    </a>
+                <?php endforeach; ?>
+                <?php if (!$conteosDisponibles): ?>
+                    <div class="empty-state">No hay conteos disponibles. Solicite al administrador crear una toma fisica.</div>
+                <?php endif; ?>
+            </div>
+        </section>
+    <?php endif; ?>
 
     <?php if ($conteo): ?>
         <div class="content-panel count-operation mb-3">
@@ -90,7 +124,7 @@ require_once __DIR__ . '/includes/navbar.php';
         </div>
     <?php endif; ?>
 
-    <section id="conteoWorkspace" class="<?= $conteo ? '' : 'd-none' ?>">
+    <section id="conteoWorkspace" class="<?= ($conteo && current_user_role() !== 'admin') ? '' : 'd-none' ?>">
     <section class="count-tool">
         <label class="form-label" for="buscarProducto">Buscar producto</label>
         <div class="position-relative">
@@ -111,7 +145,7 @@ require_once __DIR__ . '/includes/navbar.php';
 
     <div id="mensajeEstado" class="save-message d-none"></div>
 
-    <div id="accionesConteo" class="mobile-actions <?= $conteo ? '' : 'd-none' ?>">
+    <div id="accionesConteo" class="mobile-actions <?= ($conteo && current_user_role() !== 'admin') ? '' : 'd-none' ?>">
         <button class="btn btn-outline-primary btn-lg" id="guardarBorrador" type="button"><i class="bi bi-save"></i> Guardar borrador</button>
         <button class="btn btn-success btn-lg" id="finalizarConteo" type="button"><i class="bi bi-check2-circle"></i> Finalizar conteo</button>
     </div>
@@ -119,6 +153,7 @@ require_once __DIR__ . '/includes/navbar.php';
 <script>
 window.CONTEO_INICIAL = <?= json_encode($detalles, JSON_UNESCAPED_UNICODE) ?>;
 window.BASE_URL = '<?= BASE_URL ?>';
+window.USER_ROLE = '<?= e(current_user_role()) ?>';
 </script>
 <script src="<?= BASE_URL ?>/assets/js/conteo.js?v=<?= e($conteoJsVersion) ?>"></script>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

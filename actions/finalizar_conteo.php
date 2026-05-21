@@ -5,6 +5,12 @@ require_login();
 
 header('Content-Type: application/json; charset=utf-8');
 
+if (current_user_role() === 'admin') {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'message' => 'El administrador solo crea conteos']);
+    exit;
+}
+
 $autoload = __DIR__ . '/../vendor/autoload.php';
 if (!file_exists($autoload)) {
     http_response_code(500);
@@ -32,22 +38,28 @@ if ($nombre === '' || !is_array($items) || count($items) === 0) {
     echo json_encode(['ok' => false, 'message' => 'Ingrese nombre y productos']);
     exit;
 }
+if ($conteoId <= 0) {
+    http_response_code(422);
+    echo json_encode(['ok' => false, 'message' => 'Seleccione un conteo creado por el administrador']);
+    exit;
+}
 
 try {
     $pdo->beginTransaction();
 
     if ($conteoId > 0) {
-        $stmt = $pdo->prepare("SELECT id FROM conteos WHERE id = ? AND estado = 'borrador' AND (usuario_id = ? OR ? = 'admin')");
-        $stmt->execute([$conteoId, (int) $_SESSION['usuario_id'], current_user_role()]);
+        $stmt = $pdo->prepare(
+            "SELECT c.id
+             FROM conteos c
+             INNER JOIN usuarios u ON u.id = c.usuario_id
+             WHERE c.id = ? AND c.estado = 'borrador' AND (c.usuario_id = ? OR u.rol = 'admin')"
+        );
+        $stmt->execute([$conteoId, (int) $_SESSION['usuario_id']]);
         if (!$stmt->fetch()) {
             throw new RuntimeException('Conteo no disponible');
         }
-        $pdo->prepare('UPDATE conteos SET nombre_conteo = ? WHERE id = ?')->execute([$nombre, $conteoId]);
+        $pdo->prepare('UPDATE conteos SET usuario_id = ?, nombre_conteo = ? WHERE id = ?')->execute([(int) $_SESSION['usuario_id'], $nombre, $conteoId]);
         $pdo->prepare('DELETE FROM conteo_detalle WHERE conteo_id = ?')->execute([$conteoId]);
-    } else {
-        $stmt = $pdo->prepare('INSERT INTO conteos (usuario_id, nombre_conteo, estado, fecha_inicio) VALUES (?, ?, "borrador", NOW())');
-        $stmt->execute([(int) $_SESSION['usuario_id'], $nombre]);
-        $conteoId = (int) $pdo->lastInsertId();
     }
 
     $stmtProducto = $pdo->prepare('SELECT codigo, descripcion FROM productos WHERE id = ? AND estado = 1');

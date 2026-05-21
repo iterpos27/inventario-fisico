@@ -1,5 +1,6 @@
 const $ = (id) => document.getElementById(id);
 const baseUrl = window.BASE_URL || '';
+const userRole = window.USER_ROLE || 'usuario';
 const state = {
   items: new Map(),
   saving: false,
@@ -183,6 +184,13 @@ async function crearConteo() {
     $('conteoId').value = data.conteo_id;
     $('conteoCreado').value = '1';
     state.created = true;
+    if (userRole === 'admin') {
+      showMessage('Conteo creado. Los usuarios ya pueden seleccionarlo.');
+      setTimeout(() => {
+        window.location.href = `${baseUrl}/conteos_borrador.php`;
+      }, 900);
+      return;
+    }
     $('crearConteoPanel')?.classList.add('d-none');
     $('conteoWorkspace')?.classList.remove('d-none');
     $('accionesConteo')?.classList.remove('d-none');
