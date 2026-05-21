@@ -190,7 +190,7 @@ async function crearConteo() {
     $('operacionNombre').textContent = data.nombre_conteo || nombre;
     $('nombreConteo').value = data.nombre_conteo || nombre;
     showMessage('Conteo creado. Ya puede agregar productos.');
-    $('buscarProducto').focus();
+    $('buscarProducto')?.focus();
   } catch (error) {
     showMessage('No se pudo crear el conteo', 'danger');
   }
@@ -232,7 +232,7 @@ function buildPayload() {
 }
 
 let searchTimer = null;
-$('buscarProducto').addEventListener('input', (event) => {
+$('buscarProducto')?.addEventListener('input', (event) => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => buscarProductos(event.target.value), 220);
 });
@@ -247,19 +247,19 @@ $('agenciaConteo')?.addEventListener('keydown', (event) => {
 for (const id of ['numeroToma', 'agenciaConteo', 'fechaConteo']) {
   $(id)?.addEventListener('input', renderNombrePreview);
 }
-$('guardarBorrador').addEventListener('click', () => guardarBorrador(false));
-$('finalizarConteo').addEventListener('click', finalizarConteo);
-$('listaProductos').addEventListener('input', (event) => {
+$('guardarBorrador')?.addEventListener('click', () => guardarBorrador(false));
+$('finalizarConteo')?.addEventListener('click', finalizarConteo);
+$('listaProductos')?.addEventListener('input', (event) => {
   const id = event.target.dataset.edit;
   if (!id || !state.items.has(id)) return;
   state.items.get(id).cantidad = event.target.value;
 });
-$('listaProductos').addEventListener('keydown', (event) => {
+$('listaProductos')?.addEventListener('keydown', (event) => {
   if (event.key !== 'Enter' || !event.target.dataset.edit) return;
   event.preventDefault();
-  $('buscarProducto').focus();
+  $('buscarProducto')?.focus();
 });
-$('listaProductos').addEventListener('click', (event) => {
+$('listaProductos')?.addEventListener('click', (event) => {
   const button = event.target.closest('[data-delete]');
   if (!button) return;
   state.items.delete(button.dataset.delete);
