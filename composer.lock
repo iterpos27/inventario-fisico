@@ -1,0 +1,144 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "9d3a79e234fb670c35af26024dae858f",
+    "packages": [
+        {
+            "name": "composer/pcre",
+            "version": "3.1.4",
+            "dist": {
+                "type": "zip",
+                "url": "https://codeload.github.com/composer/pcre/zip/refs/tags/3.1.4"
+            },
+            "require": {
+                "php": "^7.4 || ^8.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Composer\\Pcre\\": "src"
+                }
+            }
+        },
+        {
+            "name": "maennchen/zipstream-php",
+            "version": "3.1.0",
+            "dist": {
+                "type": "zip",
+                "url": "https://codeload.github.com/maennchen/ZipStream-PHP/zip/refs/tags/3.1.0"
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "ext-zlib": "*",
+                "php-64bit": "^8.1"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "ZipStream\\": "src/"
+                }
+            }
+        },
+        {
+            "name": "markbaker/complex",
+            "version": "3.0.2",
+            "dist": {
+                "type": "zip",
+                "url": "https://codeload.github.com/MarkBaker/PHPComplex/zip/refs/tags/3.0.2"
+            },
+            "require": {
+                "php": "^7.2 || ^8.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Complex\\": "classes/src/"
+                }
+            }
+        },
+        {
+            "name": "markbaker/matrix",
+            "version": "3.0.1",
+            "dist": {
+                "type": "zip",
+                "url": "https://codeload.github.com/MarkBaker/PHPMatrix/zip/refs/tags/3.0.1"
+            },
+            "require": {
+                "php": "^7.1 || ^8.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Matrix\\": "classes/src/"
+                }
+            }
+        },
+        {
+            "name": "phpoffice/phpspreadsheet",
+            "version": "2.2.0",
+            "dist": {
+                "type": "zip",
+                "url": "https://codeload.github.com/PHPOffice/PhpSpreadsheet/zip/refs/tags/2.2.0"
+            },
+            "require": {
+                "composer/pcre": "^3.1",
+                "ext-ctype": "*",
+                "ext-dom": "*",
+                "ext-fileinfo": "*",
+                "ext-filter": "*",
+                "ext-gd": "*",
+                "ext-iconv": "*",
+                "ext-libxml": "*",
+                "ext-mbstring": "*",
+                "ext-simplexml": "*",
+                "ext-xml": "*",
+                "ext-xmlreader": "*",
+                "ext-xmlwriter": "*",
+                "ext-zip": "*",
+                "ext-zlib": "*",
+                "maennchen/zipstream-php": "^3.1",
+                "markbaker/complex": "^3.0",
+                "markbaker/matrix": "^3.0",
+                "php": "^8.1",
+                "psr/simple-cache": "^3.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "PhpOffice\\PhpSpreadsheet\\": "src/PhpSpreadsheet"
+                }
+            }
+        },
+        {
+            "name": "psr/simple-cache",
+            "version": "3.0.0",
+            "dist": {
+                "type": "zip",
+                "url": "https://codeload.github.com/php-fig/simple-cache/zip/refs/tags/3.0.0"
+            },
+            "require": {
+                "php": ">=8.0.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Psr\\SimpleCache\\": "src/"
+                }
+            }
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {},
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": ">=8.0"
+    },
+    "platform-dev": {},
+    "plugin-api-version": "2.9.0"
+}

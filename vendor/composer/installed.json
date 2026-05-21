@@ -1,0 +1,147 @@
+{
+    "packages": [
+        {
+            "name": "composer/pcre",
+            "version": "3.1.4",
+            "version_normalized": "3.1.4.0",
+            "dist": {
+                "type": "zip",
+                "url": "https://codeload.github.com/composer/pcre/zip/refs/tags/3.1.4"
+            },
+            "require": {
+                "php": "^7.4 || ^8.0"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Composer\\Pcre\\": "src"
+                }
+            },
+            "install-path": "./pcre"
+        },
+        {
+            "name": "maennchen/zipstream-php",
+            "version": "3.1.0",
+            "version_normalized": "3.1.0.0",
+            "dist": {
+                "type": "zip",
+                "url": "https://codeload.github.com/maennchen/ZipStream-PHP/zip/refs/tags/3.1.0"
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "ext-zlib": "*",
+                "php-64bit": "^8.1"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "ZipStream\\": "src/"
+                }
+            },
+            "install-path": "../maennchen/zipstream-php"
+        },
+        {
+            "name": "markbaker/complex",
+            "version": "3.0.2",
+            "version_normalized": "3.0.2.0",
+            "dist": {
+                "type": "zip",
+                "url": "https://codeload.github.com/MarkBaker/PHPComplex/zip/refs/tags/3.0.2"
+            },
+            "require": {
+                "php": "^7.2 || ^8.0"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Complex\\": "classes/src/"
+                }
+            },
+            "install-path": "../markbaker/complex"
+        },
+        {
+            "name": "markbaker/matrix",
+            "version": "3.0.1",
+            "version_normalized": "3.0.1.0",
+            "dist": {
+                "type": "zip",
+                "url": "https://codeload.github.com/MarkBaker/PHPMatrix/zip/refs/tags/3.0.1"
+            },
+            "require": {
+                "php": "^7.1 || ^8.0"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Matrix\\": "classes/src/"
+                }
+            },
+            "install-path": "../markbaker/matrix"
+        },
+        {
+            "name": "phpoffice/phpspreadsheet",
+            "version": "2.2.0",
+            "version_normalized": "2.2.0.0",
+            "dist": {
+                "type": "zip",
+                "url": "https://codeload.github.com/PHPOffice/PhpSpreadsheet/zip/refs/tags/2.2.0"
+            },
+            "require": {
+                "composer/pcre": "^3.1",
+                "ext-ctype": "*",
+                "ext-dom": "*",
+                "ext-fileinfo": "*",
+                "ext-filter": "*",
+                "ext-gd": "*",
+                "ext-iconv": "*",
+                "ext-libxml": "*",
+                "ext-mbstring": "*",
+                "ext-simplexml": "*",
+                "ext-xml": "*",
+                "ext-xmlreader": "*",
+                "ext-xmlwriter": "*",
+                "ext-zip": "*",
+                "ext-zlib": "*",
+                "maennchen/zipstream-php": "^3.1",
+                "markbaker/complex": "^3.0",
+                "markbaker/matrix": "^3.0",
+                "php": "^8.1",
+                "psr/simple-cache": "^3.0"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "PhpOffice\\PhpSpreadsheet\\": "src/PhpSpreadsheet"
+                }
+            },
+            "install-path": "../phpoffice/phpspreadsheet"
+        },
+        {
+            "name": "psr/simple-cache",
+            "version": "3.0.0",
+            "version_normalized": "3.0.0.0",
+            "dist": {
+                "type": "zip",
+                "url": "https://codeload.github.com/php-fig/simple-cache/zip/refs/tags/3.0.0"
+            },
+            "require": {
+                "php": ">=8.0.0"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Psr\\SimpleCache\\": "src/"
+                }
+            },
+            "install-path": "../psr/simple-cache"
+        }
+    ],
+    "dev": true,
+    "dev-package-names": []
+}
