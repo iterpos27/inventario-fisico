@@ -1,1 +1,5 @@
 composer.phar
+uploads/productos/*
+uploads/conteos/*
+!uploads/productos/.gitkeep
+!uploads/conteos/.gitkeep

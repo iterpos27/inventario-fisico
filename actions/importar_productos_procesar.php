@@ -42,7 +42,14 @@ try {
         throw new RuntimeException('Archivo sin datos');
     }
 
-    $headers = array_map(static fn($h) => strtolower(trim((string) $h)), $rows[1]);
+    $headerRow = reset($rows) ?: [];
+    $headers = array_map(static function ($header): string {
+        $header = strtolower(trim((string) $header));
+        $header = str_replace(["\xEF\xBB\xBF", ' ', '_', '-'], ['', '', '', ''], $header);
+
+        return $header;
+    }, $headerRow);
+
     $codigoCol = array_search('codigo', $headers, true);
     $descripcionCol = array_search('descripcion', $headers, true);
     if ($codigoCol === false || $descripcionCol === false) {
