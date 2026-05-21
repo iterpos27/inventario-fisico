@@ -39,6 +39,9 @@ if ($conteoId > 0) {
 }
 
 $pageTitle = 'Conteo movil - ' . APP_NAME;
+$conteoJsVersion = file_exists(__DIR__ . '/assets/js/conteo.js')
+    ? (string) filemtime(__DIR__ . '/assets/js/conteo.js')
+    : APP_VERSION;
 require_once __DIR__ . '/includes/header.php';
 require_once __DIR__ . '/includes/navbar.php';
 ?>
@@ -117,5 +120,5 @@ require_once __DIR__ . '/includes/navbar.php';
 window.CONTEO_INICIAL = <?= json_encode($detalles, JSON_UNESCAPED_UNICODE) ?>;
 window.BASE_URL = '<?= BASE_URL ?>';
 </script>
-<script src="<?= BASE_URL ?>/assets/js/conteo.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/conteo.js?v=<?= e($conteoJsVersion) ?>"></script>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

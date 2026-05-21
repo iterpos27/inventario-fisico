@@ -183,12 +183,12 @@ async function crearConteo() {
     $('conteoId').value = data.conteo_id;
     $('conteoCreado').value = '1';
     state.created = true;
-    $('crearConteoPanel').classList.add('d-none');
-    $('conteoWorkspace').classList.remove('d-none');
-    $('accionesConteo').classList.remove('d-none');
-    $('operacionActiva').classList.remove('d-none');
-    $('operacionNombre').textContent = data.nombre_conteo || nombre;
-    $('nombreConteo').value = data.nombre_conteo || nombre;
+    $('crearConteoPanel')?.classList.add('d-none');
+    $('conteoWorkspace')?.classList.remove('d-none');
+    $('accionesConteo')?.classList.remove('d-none');
+    $('operacionActiva')?.classList.remove('d-none');
+    if ($('operacionNombre')) $('operacionNombre').textContent = data.nombre_conteo || nombre;
+    if ($('nombreConteo')) $('nombreConteo').value = data.nombre_conteo || nombre;
     showMessage('Conteo creado. Ya puede agregar productos.');
     $('buscarProducto')?.focus();
   } catch (error) {
@@ -226,7 +226,7 @@ function buildPayload() {
   return {
     csrf_token: $('csrfToken').value,
     conteo_id: Number($('conteoId').value || 0),
-    nombre_conteo: $('nombreConteo').value.trim(),
+    nombre_conteo: $('nombreConteo')?.value.trim() || '',
     items: Array.from(state.items.values()),
   };
 }
