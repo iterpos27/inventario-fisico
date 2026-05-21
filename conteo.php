@@ -6,6 +6,16 @@ require_login();
 $conteoId = (int) ($_GET['id'] ?? 0);
 $conteo = null;
 $detalles = [];
+$defaultYear = date('Y');
+$nextSequence = 1;
+$stmt = $pdo->prepare('SELECT nombre_conteo FROM conteos WHERE nombre_conteo LIKE ? ORDER BY id DESC LIMIT 100');
+$stmt->execute(["TOMA FISICA # {$defaultYear}-%"]);
+foreach ($stmt->fetchAll() as $row) {
+    if (preg_match('/TOMA FISICA # ' . preg_quote($defaultYear, '/') . '-(\d{3})/', (string) $row['nombre_conteo'], $matches)) {
+        $nextSequence = max($nextSequence, (int) $matches[1] + 1);
+    }
+}
+$defaultToma = $defaultYear . '-' . str_pad((string) $nextSequence, 3, '0', STR_PAD_LEFT);
 
 if ($conteoId > 0) {
     $sql = 'SELECT * FROM conteos WHERE id = ?';
@@ -46,15 +56,29 @@ require_once __DIR__ . '/includes/navbar.php';
 
     <section id="crearConteoPanel" class="content-panel mb-3 <?= $conteo ? 'd-none' : '' ?>">
         <div class="section-title"><h2>Crear operacion de conteo</h2></div>
-        <label class="form-label" for="nombreConteo">Nombre del conteo</label>
-        <input class="form-control form-control-lg" id="nombreConteo" value="<?= e($conteo['nombre_conteo'] ?? ('Conteo ' . date('d/m/Y H:i'))) ?>" placeholder="Ej. Conteo bodega principal">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" for="numeroToma">Toma fisica #</label>
+                <input class="form-control form-control-lg" id="numeroToma" value="<?= e($defaultToma) ?>" placeholder="2026-001">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="agenciaConteo">Agencia</label>
+                <input class="form-control form-control-lg" id="agenciaConteo" value="PORTOVIEJO 01" placeholder="PORTOVIEJO 01">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="fechaConteo">Fecha</label>
+                <input class="form-control form-control-lg" id="fechaConteo" type="date" value="<?= e(date('Y-m-d')) ?>">
+            </div>
+        </div>
+        <input type="hidden" id="nombreConteo" value="<?= e($conteo['nombre_conteo'] ?? '') ?>">
+        <div class="count-preview mt-3" id="vistaNombreConteo"></div>
         <button class="btn btn-primary btn-lg w-100 mt-3" id="crearConteo" type="button"><i class="bi bi-plus-circle"></i> Crear conteo</button>
     </section>
 
     <?php if ($conteo): ?>
         <div class="content-panel count-operation mb-3">
             <span>Operacion activa</span>
-            <strong><?= e($conteo['nombre_conteo']) ?></strong>
+            <strong><?= nl2br(e($conteo['nombre_conteo'])) ?></strong>
         </div>
     <?php else: ?>
         <div id="operacionActiva" class="content-panel count-operation mb-3 d-none">

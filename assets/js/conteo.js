@@ -1,11 +1,10 @@
+const $ = (id) => document.getElementById(id);
+const baseUrl = window.BASE_URL || '';
 const state = {
   items: new Map(),
   saving: false,
   created: $('conteoCreado')?.value === '1',
 };
-
-const $ = (id) => document.getElementById(id);
-const baseUrl = window.BASE_URL || '';
 
 for (const item of window.CONTEO_INICIAL || []) {
   state.items.set(String(item.producto_id), {
@@ -158,10 +157,12 @@ async function finalizarConteo() {
 }
 
 async function crearConteo() {
-  const nombre = $('nombreConteo').value.trim();
-  if (!nombre) {
-    showMessage('Ingrese el nombre del conteo', 'warning');
-    $('nombreConteo').focus();
+  const numeroToma = $('numeroToma').value.trim().toUpperCase();
+  const agencia = $('agenciaConteo').value.trim().toUpperCase();
+  const fechaConteo = $('fechaConteo').value;
+  const nombre = buildNombreConteo();
+  if (!numeroToma || !agencia || !fechaConteo) {
+    showMessage('Complete numero de toma, agencia y fecha', 'warning');
     return;
   }
 
@@ -171,7 +172,9 @@ async function crearConteo() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         csrf_token: $('csrfToken').value,
-        nombre_conteo: nombre,
+        numero_toma: numeroToma,
+        agencia,
+        fecha_conteo: fechaConteo,
       }),
     });
     const data = await response.json();
@@ -184,12 +187,39 @@ async function crearConteo() {
     $('conteoWorkspace').classList.remove('d-none');
     $('accionesConteo').classList.remove('d-none');
     $('operacionActiva').classList.remove('d-none');
-    $('operacionNombre').textContent = nombre;
+    $('operacionNombre').textContent = data.nombre_conteo || nombre;
+    $('nombreConteo').value = data.nombre_conteo || nombre;
     showMessage('Conteo creado. Ya puede agregar productos.');
     $('buscarProducto').focus();
   } catch (error) {
     showMessage('No se pudo crear el conteo', 'danger');
   }
+}
+
+function formatDateLabel(value) {
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return '';
+  const days = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  return `${days[date.getDay()]} ${dd}/${mm}/${yyyy}`;
+}
+
+function buildNombreConteo() {
+  const numeroToma = $('numeroToma')?.value.trim().toUpperCase() || '';
+  const agencia = $('agenciaConteo')?.value.trim().toUpperCase() || '';
+  const fecha = formatDateLabel($('fechaConteo')?.value || '');
+  const nombre = `TOMA FISICA # ${numeroToma}\nAGENCIA: ${agencia}\nFECHA: ${fecha}`;
+  if ($('nombreConteo')) $('nombreConteo').value = nombre;
+  return nombre;
+}
+
+function renderNombrePreview() {
+  const preview = $('vistaNombreConteo');
+  if (!preview) return;
+  preview.textContent = buildNombreConteo();
 }
 
 function buildPayload() {
@@ -208,9 +238,15 @@ $('buscarProducto').addEventListener('input', (event) => {
 });
 
 $('crearConteo')?.addEventListener('click', crearConteo);
-$('nombreConteo')?.addEventListener('keydown', (event) => {
+$('numeroToma')?.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !state.created) crearConteo();
 });
+$('agenciaConteo')?.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !state.created) crearConteo();
+});
+for (const id of ['numeroToma', 'agenciaConteo', 'fechaConteo']) {
+  $(id)?.addEventListener('input', renderNombrePreview);
+}
 $('guardarBorrador').addEventListener('click', () => guardarBorrador(false));
 $('finalizarConteo').addEventListener('click', finalizarConteo);
 $('listaProductos').addEventListener('input', (event) => {
@@ -231,4 +267,5 @@ $('listaProductos').addEventListener('click', (event) => {
 });
 
 setInterval(() => guardarBorrador(true), 30000);
+renderNombrePreview();
 renderList();

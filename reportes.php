@@ -54,7 +54,7 @@ require_once __DIR__ . '/includes/navbar.php';
                 <tbody>
                     <?php foreach ($conteos as $conteo): ?>
                         <tr>
-                            <td><?= e($conteo['nombre_conteo']) ?></td>
+                            <td class="count-name"><?= nl2br(e($conteo['nombre_conteo'])) ?></td>
                             <td><span class="badge text-bg-<?= $conteo['estado'] === 'finalizado' ? 'success' : 'warning' ?>"><?= e($conteo['estado']) ?></span></td>
                             <td><?= e($conteo['nombre']) ?></td>
                             <td><?= e($conteo['fecha_inicio']) ?></td>

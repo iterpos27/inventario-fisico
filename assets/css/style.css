@@ -464,6 +464,24 @@ body {
 .count-operation strong {
   color: #003b79;
   font-size: 1.1rem;
+  white-space: pre-line;
+}
+
+.count-preview {
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 7px;
+  background: #f8fbff;
+  color: #003b79;
+  font-weight: 800;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
+.count-name {
+  white-space: normal;
+  line-height: 1.45;
+  font-weight: 700;
 }
 
 .search-input,
