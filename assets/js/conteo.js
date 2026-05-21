@@ -1,7 +1,7 @@
 const state = {
-  selected: null,
   items: new Map(),
   saving: false,
+  created: $('conteoCreado')?.value === '1',
 };
 
 const $ = (id) => document.getElementById(id);
@@ -40,7 +40,7 @@ function renderList() {
         <strong>${escapeHtml(item.descripcion)}</strong>
       </div>
       <div class="count-item-actions">
-        <input class="form-control" type="number" step="0.01" min="0" inputmode="decimal" value="${item.cantidad}" data-edit="${item.producto_id}">
+        <input class="form-control" type="number" step="0.01" min="0" inputmode="decimal" value="${item.cantidad || ''}" placeholder="Cantidad" data-edit="${item.producto_id}">
         <button class="btn btn-outline-danger" type="button" data-delete="${item.producto_id}" aria-label="Eliminar"><i class="bi bi-trash"></i></button>
       </div>
     `;
@@ -75,47 +75,40 @@ async function buscarProductos(q) {
     button.type = 'button';
     button.className = 'search-result';
     button.innerHTML = `<span>${escapeHtml(product.codigo)}</span><strong>${escapeHtml(product.descripcion)}</strong>`;
-    button.addEventListener('click', () => selectProduct(product));
+    button.addEventListener('click', () => addProductLine(product));
     results.appendChild(button);
   }
 
   results.classList.toggle('d-none', products.length === 0);
 }
 
-function selectProduct(product) {
-  state.selected = {
-    producto_id: Number(product.id),
-    codigo: product.codigo,
-    descripcion: product.descripcion,
-  };
-  $('selCodigo').textContent = product.codigo;
-  $('selDescripcion').textContent = product.descripcion;
-  $('productoSeleccionado').classList.remove('d-none');
-  $('resultadosBusqueda').classList.add('d-none');
-  $('buscarProducto').value = '';
-  $('cantidadProducto').value = state.items.get(String(product.id))?.cantidad || '';
-  $('cantidadProducto').focus();
+function focusQuantity(productId) {
+  requestAnimationFrame(() => {
+    const input = document.querySelector(`[data-edit="${productId}"]`);
+    if (!input) return;
+    input.focus();
+    input.select();
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
 }
 
-function addSelected() {
-  if (!state.selected) {
-    showMessage('Seleccione un producto', 'warning');
-    return;
+function addProductLine(product) {
+  const id = String(product.id);
+  if (!state.items.has(id)) {
+    state.items.set(id, {
+      producto_id: Number(product.id),
+      codigo: product.codigo,
+      descripcion: product.descripcion,
+      cantidad: '',
+    });
+    renderList();
+  } else {
+    showMessage('Producto ya estaba agregado. Actualice la cantidad.', 'warning');
   }
-  const cantidad = Number($('cantidadProducto').value);
-  if (!Number.isFinite(cantidad) || cantidad < 0) {
-    showMessage('Ingrese una cantidad valida', 'warning');
-    return;
-  }
-  state.items.set(String(state.selected.producto_id), {
-    ...state.selected,
-    cantidad,
-  });
-  state.selected = null;
-  $('productoSeleccionado').classList.add('d-none');
-  $('cantidadProducto').value = '';
-  $('buscarProducto').focus();
-  renderList();
+
+  $('resultadosBusqueda').classList.add('d-none');
+  $('buscarProducto').value = '';
+  focusQuantity(product.id);
 }
 
 async function guardarBorrador(auto = false) {
@@ -164,6 +157,41 @@ async function finalizarConteo() {
   }
 }
 
+async function crearConteo() {
+  const nombre = $('nombreConteo').value.trim();
+  if (!nombre) {
+    showMessage('Ingrese el nombre del conteo', 'warning');
+    $('nombreConteo').focus();
+    return;
+  }
+
+  try {
+    const response = await fetch(`${baseUrl}/actions/crear_conteo.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        csrf_token: $('csrfToken').value,
+        nombre_conteo: nombre,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.message || 'Error');
+
+    $('conteoId').value = data.conteo_id;
+    $('conteoCreado').value = '1';
+    state.created = true;
+    $('crearConteoPanel').classList.add('d-none');
+    $('conteoWorkspace').classList.remove('d-none');
+    $('accionesConteo').classList.remove('d-none');
+    $('operacionActiva').classList.remove('d-none');
+    $('operacionNombre').textContent = nombre;
+    showMessage('Conteo creado. Ya puede agregar productos.');
+    $('buscarProducto').focus();
+  } catch (error) {
+    showMessage('No se pudo crear el conteo', 'danger');
+  }
+}
+
 function buildPayload() {
   return {
     csrf_token: $('csrfToken').value,
@@ -179,16 +207,21 @@ $('buscarProducto').addEventListener('input', (event) => {
   searchTimer = setTimeout(() => buscarProductos(event.target.value), 220);
 });
 
-$('agregarProducto').addEventListener('click', addSelected);
-$('cantidadProducto').addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') addSelected();
+$('crearConteo')?.addEventListener('click', crearConteo);
+$('nombreConteo')?.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !state.created) crearConteo();
 });
 $('guardarBorrador').addEventListener('click', () => guardarBorrador(false));
 $('finalizarConteo').addEventListener('click', finalizarConteo);
 $('listaProductos').addEventListener('input', (event) => {
   const id = event.target.dataset.edit;
   if (!id || !state.items.has(id)) return;
-  state.items.get(id).cantidad = Number(event.target.value || 0);
+  state.items.get(id).cantidad = event.target.value;
+});
+$('listaProductos').addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' || !event.target.dataset.edit) return;
+  event.preventDefault();
+  $('buscarProducto').focus();
 });
 $('listaProductos').addEventListener('click', (event) => {
   const button = event.target.closest('[data-delete]');

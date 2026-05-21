@@ -42,29 +42,33 @@ require_once __DIR__ . '/includes/navbar.php';
 
     <input type="hidden" id="csrfToken" value="<?= csrf_token() ?>">
     <input type="hidden" id="conteoId" value="<?= (int) ($conteo['id'] ?? 0) ?>">
+    <input type="hidden" id="conteoCreado" value="<?= $conteo ? '1' : '0' ?>">
 
-    <div class="mb-3">
+    <section id="crearConteoPanel" class="content-panel mb-3 <?= $conteo ? 'd-none' : '' ?>">
+        <div class="section-title"><h2>Crear operacion de conteo</h2></div>
         <label class="form-label" for="nombreConteo">Nombre del conteo</label>
         <input class="form-control form-control-lg" id="nombreConteo" value="<?= e($conteo['nombre_conteo'] ?? ('Conteo ' . date('d/m/Y H:i'))) ?>" placeholder="Ej. Conteo bodega principal">
-    </div>
+        <button class="btn btn-primary btn-lg w-100 mt-3" id="crearConteo" type="button"><i class="bi bi-plus-circle"></i> Crear conteo</button>
+    </section>
 
+    <?php if ($conteo): ?>
+        <div class="content-panel count-operation mb-3">
+            <span>Operacion activa</span>
+            <strong><?= e($conteo['nombre_conteo']) ?></strong>
+        </div>
+    <?php else: ?>
+        <div id="operacionActiva" class="content-panel count-operation mb-3 d-none">
+            <span>Operacion activa</span>
+            <strong id="operacionNombre"></strong>
+        </div>
+    <?php endif; ?>
+
+    <section id="conteoWorkspace" class="<?= $conteo ? '' : 'd-none' ?>">
     <section class="count-tool">
         <label class="form-label" for="buscarProducto">Buscar producto</label>
         <div class="position-relative">
             <input class="form-control form-control-lg search-input" id="buscarProducto" placeholder="Codigo o descripcion" autocomplete="off">
             <div id="resultadosBusqueda" class="search-results d-none"></div>
-        </div>
-    </section>
-
-    <section id="productoSeleccionado" class="selected-product d-none">
-        <div>
-            <span id="selCodigo" class="product-code"></span>
-            <strong id="selDescripcion"></strong>
-        </div>
-        <label class="form-label mt-3" for="cantidadProducto">Cantidad</label>
-        <div class="quantity-row">
-            <input class="form-control quantity-input" id="cantidadProducto" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0">
-            <button class="btn btn-primary btn-lg" id="agregarProducto" type="button"><i class="bi bi-plus-lg"></i></button>
         </div>
     </section>
 
@@ -76,10 +80,11 @@ require_once __DIR__ . '/includes/navbar.php';
         <div id="listaProductos" class="count-list"></div>
         <div id="listaVacia" class="empty-state">Agregue productos para iniciar el conteo.</div>
     </section>
+    </section>
 
     <div id="mensajeEstado" class="save-message d-none"></div>
 
-    <div class="mobile-actions">
+    <div id="accionesConteo" class="mobile-actions <?= $conteo ? '' : 'd-none' ?>">
         <button class="btn btn-outline-primary btn-lg" id="guardarBorrador" type="button"><i class="bi bi-save"></i> Guardar borrador</button>
         <button class="btn btn-success btn-lg" id="finalizarConteo" type="button"><i class="bi bi-check2-circle"></i> Finalizar conteo</button>
     </div>

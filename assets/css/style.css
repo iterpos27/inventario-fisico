@@ -449,6 +449,23 @@ body {
   margin-bottom: 12px;
 }
 
+.count-operation {
+  display: grid;
+  gap: 4px;
+}
+
+.count-operation span {
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+}
+
+.count-operation strong {
+  color: #003b79;
+  font-size: 1.1rem;
+}
+
 .search-input,
 .quantity-input {
   min-height: 58px;
