@@ -3,6 +3,18 @@ require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_admin();
 
+$autoloadPath = __DIR__ . '/vendor/autoload.php';
+$phpspreadsheetReady = file_exists($autoloadPath);
+if ($phpspreadsheetReady) {
+    require_once $autoloadPath;
+    $phpspreadsheetReady = class_exists('PhpOffice\\PhpSpreadsheet\\IOFactory');
+}
+
+$errorMessage = trim((string) ($_GET['error'] ?? ''));
+if ($phpspreadsheetReady && str_contains($errorMessage, 'composer require phpoffice/phpspreadsheet')) {
+    $errorMessage = '';
+}
+
 $usuarios = $pdo->query('SELECT nombre, usuario, rol, estado, fecha_creacion FROM usuarios ORDER BY id DESC LIMIT 100')->fetchAll();
 $pageTitle = 'Importar productos - ' . APP_NAME;
 require_once __DIR__ . '/includes/header.php';
@@ -19,8 +31,13 @@ require_once __DIR__ . '/includes/navbar.php';
     <?php if (!empty($_GET['msg'])): ?>
         <div class="alert alert-success"><?= e($_GET['msg']) ?></div>
     <?php endif; ?>
-    <?php if (!empty($_GET['error'])): ?>
-        <div class="alert alert-danger"><?= e($_GET['error']) ?></div>
+    <?php if ($errorMessage !== ''): ?>
+        <div class="alert alert-danger"><?= e($errorMessage) ?></div>
+    <?php endif; ?>
+    <?php if ($phpspreadsheetReady): ?>
+        <div class="alert alert-success">PhpSpreadsheet instalado y listo para importar Excel.</div>
+    <?php else: ?>
+        <div class="alert alert-warning">Falta instalar PhpSpreadsheet. Ejecute <strong>composer install</strong> en la carpeta del proyecto.</div>
     <?php endif; ?>
 
     <div class="row g-4">
