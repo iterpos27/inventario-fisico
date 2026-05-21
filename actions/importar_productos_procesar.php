@@ -17,6 +17,19 @@ require_once $autoload;
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
+$missingPhpExtensions = [];
+foreach (['zip', 'gd'] as $extension) {
+    if (!extension_loaded($extension)) {
+        $missingPhpExtensions[] = $extension;
+    }
+}
+if ($missingPhpExtensions) {
+    header('Location: ' . BASE_URL . '/importar_productos.php?error=' . urlencode(
+        'Apache no tiene activas las extensiones PHP requeridas: ' . implode(', ', $missingPhpExtensions) . '. Active las extensiones en XAMPP y reinicie Apache.'
+    ));
+    exit;
+}
+
 if (empty($_FILES['archivo']['tmp_name']) || $_FILES['archivo']['error'] !== UPLOAD_ERR_OK) {
     header('Location: ' . BASE_URL . '/importar_productos.php?error=Seleccione un archivo valido');
     exit;
@@ -80,6 +93,6 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    header('Location: ' . BASE_URL . '/importar_productos.php?error=' . urlencode('No se pudo importar el archivo. Revise columnas y formato.'));
+    header('Location: ' . BASE_URL . '/importar_productos.php?error=' . urlencode('No se pudo importar: ' . $exception->getMessage()));
 }
 exit;

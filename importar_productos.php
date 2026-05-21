@@ -9,9 +9,16 @@ if ($phpspreadsheetReady) {
     require_once $autoloadPath;
     $phpspreadsheetReady = class_exists('PhpOffice\\PhpSpreadsheet\\IOFactory');
 }
+$missingPhpExtensions = [];
+foreach (['zip', 'gd'] as $extension) {
+    if (!extension_loaded($extension)) {
+        $missingPhpExtensions[] = $extension;
+    }
+}
+$excelReady = $phpspreadsheetReady && $missingPhpExtensions === [];
 
 $errorMessage = trim((string) ($_GET['error'] ?? ''));
-if ($phpspreadsheetReady && str_contains($errorMessage, 'composer require phpoffice/phpspreadsheet')) {
+if ($excelReady && str_contains($errorMessage, 'composer require phpoffice/phpspreadsheet')) {
     $errorMessage = '';
 }
 
@@ -34,8 +41,14 @@ require_once __DIR__ . '/includes/navbar.php';
     <?php if ($errorMessage !== ''): ?>
         <div class="alert alert-danger"><?= e($errorMessage) ?></div>
     <?php endif; ?>
-    <?php if ($phpspreadsheetReady): ?>
+    <?php if ($excelReady): ?>
         <div class="alert alert-success">PhpSpreadsheet instalado y listo para importar Excel.</div>
+    <?php elseif ($phpspreadsheetReady && $missingPhpExtensions): ?>
+        <div class="alert alert-warning">
+            PhpSpreadsheet esta instalado, pero Apache no tiene activas estas extensiones PHP:
+            <strong><?= e(implode(', ', $missingPhpExtensions)) ?></strong>.
+            Active las extensiones en XAMPP y reinicie Apache.
+        </div>
     <?php else: ?>
         <div class="alert alert-warning">Falta instalar PhpSpreadsheet. Ejecute <strong>composer install</strong> en la carpeta del proyecto.</div>
     <?php endif; ?>
