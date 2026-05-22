@@ -83,19 +83,24 @@ $layoutStarted = true;
         </div>
         <?php if (current_user_role() === 'admin'): ?>
             <a class="<?= nav_active('dashboard.php', $currentPage) ?>" href="<?= BASE_URL ?>/dashboard.php"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
-            <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-clipboard-check"></i><span>Conteo</span></a>
-            <a class="<?= nav_active('reportes.php', $currentPage) ?>" href="<?= BASE_URL ?>/reportes.php"><i class="bi bi-file-earmark-spreadsheet"></i><span>Reportes</span></a>
-            <a class="<?= nav_active('productos.php', $currentPage) ?>" href="<?= BASE_URL ?>/productos.php"><i class="bi bi-box-seam"></i><span>Productos</span></a>
-            <a class="<?= nav_active('usuarios.php', $currentPage) . nav_active('agencias.php', $currentPage) . nav_active('configuracion.php', $currentPage) ?>" href="<?= BASE_URL ?>/usuarios.php"><i class="bi bi-gear"></i><span>Administracion</span></a>
-        <?php else: ?>
-            <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-clipboard-check"></i><span>Conteo</span></a>
+            <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-plus-circle"></i><span>Nuevo conteo</span></a>
+            <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= BASE_URL ?>/historial_conteos.php?estado=borrador"><i class="bi bi-save"></i><span>Borradores</span></a>
             <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= BASE_URL ?>/historial_conteos.php"><i class="bi bi-clock-history"></i><span>Historial</span></a>
+            <a href="<?= BASE_URL ?>/logout.php" class="mobile-logout-link"><i class="bi bi-box-arrow-right"></i><span>Cerrar sesion</span></a>
+        <?php else: ?>
+            <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-clipboard-check"></i><span>Conteo inventario</span></a>
+            <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= BASE_URL ?>/historial_conteos.php?estado=borrador"><i class="bi bi-save"></i><span>Borradores</span></a>
+            <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= BASE_URL ?>/historial_conteos.php"><i class="bi bi-clock-history"></i><span>Historial</span></a>
+            <a href="<?= BASE_URL ?>/logout.php" class="mobile-logout-link"><i class="bi bi-box-arrow-right"></i><span>Cerrar sesion</span></a>
         <?php endif; ?>
     </nav>
 
     <div class="app-main">
         <header class="app-topbar">
-            <div>
+            <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-controls="mobileMenu" aria-expanded="false">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="topbar-title">
                 <span><?= current_user_name() ?></span>
                 <h1><?= e($pageLabel) ?></h1>
             </div>
@@ -113,9 +118,6 @@ $layoutStarted = true;
                         <a href="<?= BASE_URL ?>/logout.php"><i class="bi bi-box-arrow-right"></i> Salir</a>
                     </div>
                 </details>
-                <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-controls="mobileMenu" aria-expanded="false">
-                    <i class="bi bi-list"></i>
-                </button>
             </div>
         </header>
         <script>

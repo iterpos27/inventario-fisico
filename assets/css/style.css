@@ -410,7 +410,7 @@ body {
   border-bottom: 1px solid #d7e4f5;
 }
 
-.app-topbar > div > span {
+.topbar-title > span {
   display: block;
   color: #6a7890;
   font-weight: 800;
@@ -418,7 +418,7 @@ body {
   margin-bottom: 4px;
 }
 
-.app-topbar h1 {
+.topbar-title h1 {
   margin: 0;
   color: #173f75;
   font-size: 1.25rem;
@@ -1243,6 +1243,16 @@ body {
     background: #0b7083;
   }
 
+  .mobile-slide-nav a.mobile-logout-link {
+    margin-top: auto;
+    color: #fff;
+    background: rgba(239, 35, 50, 0.16);
+  }
+
+  .mobile-slide-nav a.mobile-logout-link:hover {
+    background: var(--danger);
+  }
+
   body.mobile-menu-open {
     overflow: hidden;
   }
@@ -1264,11 +1274,30 @@ body {
 
   .app-topbar {
     min-height: 68px;
-    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    padding: 10px 12px;
   }
 
-  .app-topbar h1 {
-    font-size: 1.05rem;
+  .topbar-title {
+    min-width: 0;
+    text-align: center;
+  }
+
+  .topbar-title > span {
+    overflow: hidden;
+    margin-bottom: 2px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.74rem;
+  }
+
+  .topbar-title h1 {
+    overflow: hidden;
+    color: var(--primary-dark);
+    font-size: 1rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .topbar-user-menu summary span,
@@ -1287,6 +1316,17 @@ body {
     color: var(--primary-dark);
     font-size: 1.55rem;
     cursor: pointer;
+  }
+
+  .topbar-actions {
+    justify-content: end;
+  }
+
+  .topbar-user-menu summary {
+    width: 44px;
+    height: 44px;
+    justify-content: center;
+    padding: 0;
   }
 
   .mobile-actions {
