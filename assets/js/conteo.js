@@ -158,12 +158,11 @@ async function finalizarConteo() {
 }
 
 async function crearConteo() {
-  const numeroToma = $('numeroToma').value.trim().toUpperCase();
   const agencia = $('agenciaConteo').value.trim().toUpperCase();
   const fechaConteo = $('fechaConteo').value;
   const nombre = buildNombreConteo();
-  if (!numeroToma || !agencia || !fechaConteo) {
-    showMessage('Complete numero de toma, agencia y fecha', 'warning');
+  if (!agencia || !fechaConteo) {
+    showMessage('Complete agencia y fecha', 'warning');
     return;
   }
 
@@ -173,7 +172,6 @@ async function crearConteo() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         csrf_token: $('csrfToken').value,
-        numero_toma: numeroToma,
         agencia,
         fecha_conteo: fechaConteo,
       }),
@@ -182,6 +180,7 @@ async function crearConteo() {
     if (!response.ok || !data.ok) throw new Error(data.message || 'Error');
 
     $('conteoId').value = data.conteo_id;
+    if ($('numeroToma') && data.numero_toma) $('numeroToma').value = data.numero_toma;
     $('conteoCreado').value = '1';
     state.created = true;
     if (userRole === 'admin') {

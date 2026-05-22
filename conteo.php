@@ -80,7 +80,7 @@ require_once __DIR__ . '/includes/navbar.php';
         <div class="row g-3">
             <div class="col-md-4">
                 <label class="form-label" for="numeroToma">Toma fisica #</label>
-                <input class="form-control form-control-lg" id="numeroToma" value="<?= e($defaultToma) ?>" placeholder="2026-001">
+                <input class="form-control form-control-lg" id="numeroToma" value="<?= e($defaultToma) ?>" placeholder="Automatico" readonly>
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="agenciaConteo">Agencia</label>

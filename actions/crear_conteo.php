@@ -12,19 +12,12 @@ if (!is_array($payload) || !verify_csrf($payload['csrf_token'] ?? null)) {
     exit;
 }
 
-$numeroToma = strtoupper(trim((string) ($payload['numero_toma'] ?? '')));
 $agencia = strtoupper(trim((string) ($payload['agencia'] ?? '')));
 $fechaConteo = trim((string) ($payload['fecha_conteo'] ?? ''));
 
-if ($numeroToma === '' || $agencia === '' || $fechaConteo === '') {
+if ($agencia === '' || $fechaConteo === '') {
     http_response_code(422);
-    echo json_encode(['ok' => false, 'message' => 'Complete numero de toma, agencia y fecha']);
-    exit;
-}
-
-if (!preg_match('/^\d{4}-\d{3}$/', $numeroToma)) {
-    http_response_code(422);
-    echo json_encode(['ok' => false, 'message' => 'Use el formato de toma 2026-001']);
+    echo json_encode(['ok' => false, 'message' => 'Complete agencia y fecha']);
     exit;
 }
 
@@ -44,19 +37,28 @@ $days = [
     6 => 'SABADO',
     7 => 'DOMINGO',
 ];
-$dayName = $days[(int) $date->format('N')];
-$nombre = "TOMA FISICA # {$numeroToma}\nAGENCIA: {$agencia}\nFECHA: {$dayName} " . $date->format('d/m/Y');
-
 try {
-    $stmt = $pdo->prepare('SELECT COUNT(*) FROM tomas_fisicas WHERE numero_toma = ?');
-    $stmt->execute([$numeroToma]);
-    if ((int) $stmt->fetchColumn() > 0) {
-        http_response_code(409);
-        echo json_encode(['ok' => false, 'message' => 'Ya existe una toma con ese numero']);
-        exit;
-    }
-
     $pdo->beginTransaction();
+
+    $year = $date->format('Y');
+    $stmt = $pdo->prepare(
+        "SELECT numero_toma
+         FROM tomas_fisicas
+         WHERE numero_toma LIKE ?
+         ORDER BY numero_toma DESC
+         LIMIT 1
+         FOR UPDATE"
+    );
+    $stmt->execute(["{$year}-%"]);
+    $lastNumber = (string) ($stmt->fetchColumn() ?: '');
+    $nextSequence = 1;
+    if (preg_match('/^\d{4}-(\d{3})$/', $lastNumber, $matches)) {
+        $nextSequence = (int) $matches[1] + 1;
+    }
+    $numeroToma = $year . '-' . str_pad((string) $nextSequence, 3, '0', STR_PAD_LEFT);
+
+    $dayName = $days[(int) $date->format('N')];
+    $nombre = "TOMA FISICA # {$numeroToma}\nAGENCIA: {$agencia}\nFECHA: {$dayName} " . $date->format('d/m/Y');
 
     $stmt = $pdo->prepare(
         'INSERT INTO tomas_fisicas (numero_toma, agencia, fecha_toma, nombre_toma, estado, creado_por)
@@ -77,6 +79,7 @@ try {
         'ok' => true,
         'toma_id' => $tomaId,
         'conteo_id' => 0,
+        'numero_toma' => $numeroToma,
         'nombre_conteo' => $nombre,
         'message' => 'Toma fisica creada para usuarios activos',
     ]);
