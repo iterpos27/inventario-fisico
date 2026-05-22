@@ -192,7 +192,7 @@ async function crearConteo() {
     if (userRole === 'admin') {
       showMessage(`Toma creada para ${data.usuarios_asignados || usuarios.length} usuario(s).`);
       setTimeout(() => {
-        window.location.href = `${baseUrl}/conteos_borrador.php`;
+        window.location.href = `${baseUrl}/conteo.php`;
       }, 900);
       return;
     }

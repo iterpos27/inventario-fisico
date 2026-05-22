@@ -4,7 +4,7 @@ require_once __DIR__ . '/../includes/auth.php';
 require_login();
 
 if (current_user_role() === 'admin') {
-    header('Location: ' . BASE_URL . '/conteos_borrador.php');
+    header('Location: ' . BASE_URL . '/conteo.php');
     exit;
 }
 

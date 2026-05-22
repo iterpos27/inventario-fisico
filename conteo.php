@@ -7,6 +7,7 @@ $conteoId = (int) ($_GET['id'] ?? 0);
 $conteo = null;
 $detalles = [];
 $tomasDisponibles = [];
+$tomasAbiertasAdmin = [];
 $usuariosParticipantes = [];
 $defaultYear = date('Y');
 $nextSequence = 1;
@@ -30,7 +31,7 @@ if ($conteoId > 0) {
     $conteo = $stmt->fetch();
 
     if (!$conteo || $conteo['estado'] === 'finalizado') {
-        header('Location: ' . BASE_URL . '/conteos_borrador.php');
+        header('Location: ' . BASE_URL . '/conteo.php');
         exit;
     }
 
@@ -61,6 +62,18 @@ if (current_user_role() === 'admin' && $conteoId === 0) {
          FROM usuarios
          WHERE rol = 'usuario' AND estado = 1
          ORDER BY nombre"
+    )->fetchAll();
+
+    $tomasAbiertasAdmin = $pdo->query(
+        "SELECT t.id, t.nombre_toma, t.estado, t.fecha_creacion,
+                COUNT(tu.id) AS asignados,
+                SUM(CASE WHEN tu.estado = 'en_proceso' THEN 1 ELSE 0 END) AS en_proceso,
+                SUM(CASE WHEN tu.estado = 'finalizado' THEN 1 ELSE 0 END) AS finalizados
+         FROM tomas_fisicas t
+         LEFT JOIN toma_usuarios tu ON tu.toma_id = t.id
+         WHERE t.estado = 'abierta'
+         GROUP BY t.id, t.nombre_toma, t.estado, t.fecha_creacion
+         ORDER BY t.id DESC"
     )->fetchAll();
 }
 
@@ -127,6 +140,30 @@ require_once __DIR__ . '/includes/navbar.php';
         </div>
         <button class="btn btn-primary btn-lg w-100 mt-3" id="crearConteo" type="button"><i class="bi bi-plus-circle"></i> Crear toma fisica</button>
     </section>
+
+    <section class="content-panel mb-3">
+        <div class="section-title"><h2>Tomas abiertas</h2></div>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead><tr><th>Toma fisica</th><th>Asignados</th><th>En proceso</th><th>Finalizados</th><th>Creacion</th><th></th></tr></thead>
+                <tbody>
+                    <?php foreach ($tomasAbiertasAdmin as $toma): ?>
+                        <tr>
+                            <td class="count-name"><?= nl2br(e($toma['nombre_toma'])) ?></td>
+                            <td><?= (int) $toma['asignados'] ?></td>
+                            <td><?= (int) $toma['en_proceso'] ?></td>
+                            <td><?= (int) $toma['finalizados'] ?></td>
+                            <td><?= e($toma['fecha_creacion']) ?></td>
+                            <td><a class="btn btn-sm btn-outline-primary" href="<?= BASE_URL ?>/toma_detalle.php?id=<?= (int) $toma['id'] ?>">Ver detalle</a></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (!$tomasAbiertasAdmin): ?>
+                        <tr><td colspan="6" class="text-center text-secondary py-4">No hay tomas abiertas.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </section>
     <?php endif; ?>
 
     <?php if (current_user_role() !== 'admin' && !$conteo): ?>
@@ -136,7 +173,7 @@ require_once __DIR__ . '/includes/navbar.php';
                 <?php foreach ($tomasDisponibles as $disponible): ?>
                     <a class="available-count" href="<?= BASE_URL ?>/actions/iniciar_conteo.php?toma_id=<?= (int) $disponible['toma_id'] ?>">
                         <span><?= nl2br(e($disponible['nombre_toma'])) ?></span>
-                        <small><?= (int) $disponible['lineas'] ?> lineas registradas · <?= $disponible['conteo_estado'] === 'borrador' ? 'Continuar' : 'Empezar' ?></small>
+                        <small><?= (int) $disponible['lineas'] ?> lineas registradas - <?= $disponible['conteo_estado'] === 'borrador' ? 'Continuar' : 'Empezar' ?></small>
                     </a>
                 <?php endforeach; ?>
                 <?php if (!$tomasDisponibles): ?>

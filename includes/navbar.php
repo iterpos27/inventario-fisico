@@ -11,7 +11,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 $pageLabel = match ($currentPage) {
     'dashboard.php' => 'Panel',
     'conteo.php' => 'Conteo',
-    'conteos_borrador.php' => 'Borradores',
     'reportes.php' => 'Reportes',
     'productos.php' => 'Productos',
     'importar_productos.php' => 'Administracion',
@@ -43,7 +42,6 @@ $layoutStarted = true;
         <nav class="sidebar-nav" aria-label="Menu principal">
             <a class="sidebar-link<?= nav_active('dashboard.php', $currentPage) ?>" href="<?= BASE_URL ?>/dashboard.php"><i class="bi bi-bar-chart-line"></i> Panel</a>
             <a class="sidebar-link<?= nav_active('conteo.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-phone"></i> Conteo</a>
-            <a class="sidebar-link<?= nav_active('conteos_borrador.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteos_borrador.php"><i class="bi bi-journal-text"></i> Borradores</a>
             <a class="sidebar-link<?= nav_active('reportes.php', $currentPage) ?>" href="<?= BASE_URL ?>/reportes.php"><i class="bi bi-file-earmark-spreadsheet"></i> Reportes</a>
             <?php if (current_user_role() === 'admin'): ?>
                 <a class="sidebar-link<?= nav_active('productos.php', $currentPage) ?>" href="<?= BASE_URL ?>/productos.php"><i class="bi bi-box-seam"></i> Productos</a>
