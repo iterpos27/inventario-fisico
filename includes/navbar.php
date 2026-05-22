@@ -9,7 +9,7 @@ foreach (['png', 'jpg', 'jpeg', 'webp'] as $logoExt) {
 
 $currentPage = basename($_SERVER['PHP_SELF']);
 $pageLabel = match ($currentPage) {
-    'dashboard.php', 'estadisticas.php', 'tendencias.php' => 'Panel',
+    'dashboard.php' => 'Panel',
     'conteo.php', 'toma_detalle.php', 'historial_conteos.php' => 'Conteo',
     'reportes.php' => 'Reportes',
     'productos.php' => 'Productos',
@@ -45,14 +45,7 @@ $layoutStarted = true;
         </a>
 
         <nav class="sidebar-nav" aria-label="Menu principal">
-            <details class="nav-section nav-panel<?= nav_section_class(['dashboard.php', 'estadisticas.php', 'tendencias.php'], $currentPage) ?>"<?= nav_section_open(['dashboard.php', 'estadisticas.php', 'tendencias.php'], $currentPage) ?>>
-                <summary><i class="bi bi-speedometer2 icon-panel"></i><span>Panel</span><i class="bi bi-chevron-down nav-chevron"></i></summary>
-                <div class="nav-submenu">
-                    <a class="sidebar-sublink<?= nav_active('dashboard.php', $currentPage) ?>" href="<?= BASE_URL ?>/dashboard.php">Dashboard general</a>
-                    <a class="sidebar-sublink<?= nav_active('estadisticas.php', $currentPage) ?>" href="<?= BASE_URL ?>/estadisticas.php">Estadisticas rapidas</a>
-                    <a class="sidebar-sublink<?= nav_active('tendencias.php', $currentPage) ?>" href="<?= BASE_URL ?>/tendencias.php">Tendencias</a>
-                </div>
-            </details>
+            <a class="sidebar-link<?= nav_active('dashboard.php', $currentPage) ?>" href="<?= BASE_URL ?>/dashboard.php"><i class="bi bi-speedometer2 icon-panel"></i><span>Dashboard</span></a>
 
             <details class="nav-section nav-count<?= nav_section_class(['conteo.php', 'toma_detalle.php', 'historial_conteos.php'], $currentPage) ?>"<?= nav_section_open(['conteo.php', 'toma_detalle.php', 'historial_conteos.php'], $currentPage) ?>>
                 <summary><i class="bi bi-clipboard-check icon-count"></i><span>Conteo y Borradores</span><i class="bi bi-chevron-down nav-chevron"></i></summary>
