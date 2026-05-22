@@ -159,11 +159,14 @@ async function finalizarConteo() {
 
 async function crearConteo() {
   const agencia = $('agenciaConteo').value.trim().toUpperCase();
-  const fechaConteo = $('fechaConteo').value;
+  const fechaHabilitacion = $('fechaHabilitacion').value;
+  const fechaCierre = $('fechaCierre').value;
+  const horaInicio = $('horaInicio').value;
+  const horaFin = $('horaFin').value;
   const nombre = buildNombreConteo();
   const usuarios = getUsuariosSeleccionados();
-  if (!agencia || !fechaConteo) {
-    showMessage('Complete agencia y fecha', 'warning');
+  if (!fechaHabilitacion || !fechaCierre || !horaInicio || !horaFin) {
+    showMessage('Complete fechas y horas de la toma', 'warning');
     return;
   }
   if (usuarios.length === 0) {
@@ -178,7 +181,10 @@ async function crearConteo() {
       body: JSON.stringify({
         csrf_token: $('csrfToken').value,
         agencia,
-        fecha_conteo: fechaConteo,
+        fecha_habilitacion: fechaHabilitacion,
+        fecha_cierre: fechaCierre,
+        hora_inicio: horaInicio,
+        hora_fin: horaFin,
         usuarios,
       }),
     });
@@ -229,8 +235,11 @@ function formatDateLabel(value) {
 function buildNombreConteo() {
   const numeroToma = $('numeroToma')?.value.trim().toUpperCase() || '';
   const agencia = $('agenciaConteo')?.value.trim().toUpperCase() || '';
-  const fecha = formatDateLabel($('fechaConteo')?.value || '');
-  const nombre = `TOMA FISICA # ${numeroToma}\nAGENCIA: ${agencia}\nFECHA: ${fecha}`;
+  const fechaHabilitacion = formatDateLabel($('fechaHabilitacion')?.value || '');
+  const fechaCierre = formatDateLabel($('fechaCierre')?.value || '');
+  const horaInicio = $('horaInicio')?.value || '';
+  const horaFin = $('horaFin')?.value || '';
+  const nombre = `TOMA FISICA # ${numeroToma}\nAGENCIA: ${agencia}\nHABILITACION: ${fechaHabilitacion} ${horaInicio}\nFINALIZACION: ${fechaCierre} ${horaFin}`;
   if ($('nombreConteo')) $('nombreConteo').value = nombre;
   return nombre;
 }
@@ -273,7 +282,7 @@ $('numeroToma')?.addEventListener('keydown', (event) => {
 $('agenciaConteo')?.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !state.created) crearConteo();
 });
-for (const id of ['numeroToma', 'agenciaConteo', 'fechaConteo']) {
+for (const id of ['numeroToma', 'agenciaConteo', 'fechaHabilitacion', 'fechaCierre', 'horaInicio', 'horaFin']) {
   $(id)?.addEventListener('input', renderNombrePreview);
 }
 $('guardarBorrador')?.addEventListener('click', () => guardarBorrador(false));

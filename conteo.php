@@ -9,6 +9,7 @@ $detalles = [];
 $tomasDisponibles = [];
 $tomasAbiertasAdmin = [];
 $usuariosParticipantes = [];
+$agenciasActivas = [];
 $defaultYear = date('Y');
 $nextSequence = 1;
 $stmt = $pdo->prepare('SELECT numero_toma FROM tomas_fisicas WHERE numero_toma LIKE ? ORDER BY id DESC LIMIT 100');
@@ -57,6 +58,13 @@ if (current_user_role() !== 'admin' && $conteoId === 0) {
 }
 
 if (current_user_role() === 'admin' && $conteoId === 0) {
+    $agenciasActivas = $pdo->query(
+        "SELECT nombre
+         FROM agencias
+         WHERE estado = 1
+         ORDER BY nombre"
+    )->fetchAll();
+
     $usuariosParticipantes = $pdo->query(
         "SELECT id, nombre, usuario
          FROM usuarios
@@ -65,14 +73,14 @@ if (current_user_role() === 'admin' && $conteoId === 0) {
     )->fetchAll();
 
     $tomasAbiertasAdmin = $pdo->query(
-        "SELECT t.id, t.nombre_toma, t.estado, t.fecha_creacion,
+        "SELECT t.id, t.nombre_toma, t.estado, t.fecha_creacion, t.fecha_habilitacion, t.fecha_cierre, t.hora_inicio, t.hora_fin,
                 COUNT(tu.id) AS asignados,
                 SUM(CASE WHEN tu.estado = 'en_proceso' THEN 1 ELSE 0 END) AS en_proceso,
                 SUM(CASE WHEN tu.estado = 'finalizado' THEN 1 ELSE 0 END) AS finalizados
          FROM tomas_fisicas t
          LEFT JOIN toma_usuarios tu ON tu.toma_id = t.id
          WHERE t.estado = 'abierta'
-         GROUP BY t.id, t.nombre_toma, t.estado, t.fecha_creacion
+         GROUP BY t.id, t.nombre_toma, t.estado, t.fecha_creacion, t.fecha_habilitacion, t.fecha_cierre, t.hora_inicio, t.hora_fin
          ORDER BY t.id DESC"
     )->fetchAll();
 }
@@ -107,11 +115,28 @@ require_once __DIR__ . '/includes/navbar.php';
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="agenciaConteo">Agencia</label>
-                <input class="form-control form-control-lg" id="agenciaConteo" value="PORTOVIEJO 01" placeholder="PORTOVIEJO 01">
+                <select class="form-select form-control-lg" id="agenciaConteo">
+                    <option value="">Sin agencia</option>
+                    <?php foreach ($agenciasActivas as $agenciaActiva): ?>
+                        <option value="<?= e($agenciaActiva['nombre']) ?>"><?= e($agenciaActiva['nombre']) ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div class="col-md-4">
-                <label class="form-label" for="fechaConteo">Fecha</label>
-                <input class="form-control form-control-lg" id="fechaConteo" type="date" value="<?= e(date('Y-m-d')) ?>">
+                <label class="form-label" for="fechaHabilitacion">Fecha habilitacion</label>
+                <input class="form-control form-control-lg" id="fechaHabilitacion" type="date" value="<?= e(date('Y-m-d')) ?>">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="fechaCierre">Fecha finalizacion</label>
+                <input class="form-control form-control-lg" id="fechaCierre" type="date" value="<?= e(date('Y-m-d')) ?>">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="horaInicio">Hora inicio</label>
+                <input class="form-control form-control-lg" id="horaInicio" type="time" value="08:00">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="horaFin">Hora fin</label>
+                <input class="form-control form-control-lg" id="horaFin" type="time" value="18:00">
             </div>
         </div>
         <div class="count-preview mt-3" id="vistaNombreConteo"></div>
@@ -145,7 +170,7 @@ require_once __DIR__ . '/includes/navbar.php';
         <div class="section-title"><h2>Tomas abiertas</h2></div>
         <div class="table-responsive">
             <table class="table align-middle">
-                <thead><tr><th>Toma fisica</th><th>Asignados</th><th>En proceso</th><th>Finalizados</th><th>Creacion</th><th></th></tr></thead>
+                <thead><tr><th>Toma fisica</th><th>Asignados</th><th>En proceso</th><th>Finalizados</th><th>Periodo</th><th></th></tr></thead>
                 <tbody>
                     <?php foreach ($tomasAbiertasAdmin as $toma): ?>
                         <tr>
@@ -153,7 +178,7 @@ require_once __DIR__ . '/includes/navbar.php';
                             <td><?= (int) $toma['asignados'] ?></td>
                             <td><?= (int) $toma['en_proceso'] ?></td>
                             <td><?= (int) $toma['finalizados'] ?></td>
-                            <td><?= e($toma['fecha_creacion']) ?></td>
+                            <td><?= e(($toma['fecha_habilitacion'] ?? '-') . ' ' . substr((string) ($toma['hora_inicio'] ?? ''), 0, 5) . ' / ' . ($toma['fecha_cierre'] ?? '-') . ' ' . substr((string) ($toma['hora_fin'] ?? ''), 0, 5)) ?></td>
                             <td><a class="btn btn-sm btn-outline-primary" href="<?= BASE_URL ?>/toma_detalle.php?id=<?= (int) $toma['id'] ?>">Ver detalle</a></td>
                         </tr>
                     <?php endforeach; ?>

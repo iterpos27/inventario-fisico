@@ -13,7 +13,7 @@ $pageLabel = match ($currentPage) {
     'conteo.php', 'toma_detalle.php', 'historial_conteos.php' => 'Conteo',
     'reportes.php' => 'Reportes',
     'productos.php' => 'Productos',
-    'usuarios.php', 'configuracion.php' => 'Administracion',
+    'usuarios.php', 'agencias.php', 'configuracion.php' => 'Administracion',
     default => 'Inventario',
 };
 
@@ -59,8 +59,6 @@ $layoutStarted = true;
                 <div class="nav-submenu">
                     <a class="sidebar-sublink<?= nav_active('conteo.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteo.php"><?= current_user_role() === 'admin' ? 'Nuevo conteo' : 'Conteos disponibles' ?></a>
                     <a class="sidebar-sublink<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= BASE_URL ?>/historial_conteos.php">Historial de conteos</a>
-                    <a class="sidebar-sublink" href="<?= BASE_URL ?>/conteo.php">Nuevo borrador</a>
-                    <a class="sidebar-sublink" href="<?= BASE_URL ?>/conteo.php">Lista de borradores</a>
                 </div>
             </details>
 
@@ -69,10 +67,11 @@ $layoutStarted = true;
             <?php if (current_user_role() === 'admin'): ?>
             <a class="sidebar-link<?= nav_active('productos.php', $currentPage) ?>" href="<?= BASE_URL ?>/productos.php"><i class="bi bi-box-seam icon-products"></i><span>Productos</span></a>
 
-            <details class="nav-section nav-admin<?= nav_section_class(['usuarios.php', 'configuracion.php'], $currentPage) ?>"<?= nav_section_open(['usuarios.php', 'configuracion.php'], $currentPage) ?>>
+            <details class="nav-section nav-admin<?= nav_section_class(['usuarios.php', 'agencias.php', 'configuracion.php'], $currentPage) ?>"<?= nav_section_open(['usuarios.php', 'agencias.php', 'configuracion.php'], $currentPage) ?>>
                 <summary><i class="bi bi-gear icon-admin"></i><span>Administracion</span><i class="bi bi-chevron-down nav-chevron"></i></summary>
                 <div class="nav-submenu">
                     <a class="sidebar-sublink<?= nav_active('usuarios.php', $currentPage) ?>" href="<?= BASE_URL ?>/usuarios.php">Usuarios</a>
+                    <a class="sidebar-sublink<?= nav_active('agencias.php', $currentPage) ?>" href="<?= BASE_URL ?>/agencias.php">Agencias</a>
                     <a class="sidebar-sublink<?= nav_active('configuracion.php', $currentPage) ?>" href="<?= BASE_URL ?>/configuracion.php">Configuracion del sistema</a>
                 </div>
             </details>

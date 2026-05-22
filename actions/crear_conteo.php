@@ -13,12 +13,15 @@ if (!is_array($payload) || !verify_csrf($payload['csrf_token'] ?? null)) {
 }
 
 $agencia = strtoupper(trim((string) ($payload['agencia'] ?? '')));
-$fechaConteo = trim((string) ($payload['fecha_conteo'] ?? ''));
+$fechaHabilitacion = trim((string) ($payload['fecha_habilitacion'] ?? $payload['fecha_conteo'] ?? ''));
+$fechaCierre = trim((string) ($payload['fecha_cierre'] ?? ''));
+$horaInicio = trim((string) ($payload['hora_inicio'] ?? ''));
+$horaFin = trim((string) ($payload['hora_fin'] ?? ''));
 $usuariosPayload = $payload['usuarios'] ?? [];
 
-if ($agencia === '' || $fechaConteo === '') {
+if ($fechaHabilitacion === '' || $fechaCierre === '' || $horaInicio === '' || $horaFin === '') {
     http_response_code(422);
-    echo json_encode(['ok' => false, 'message' => 'Complete agencia y fecha']);
+    echo json_encode(['ok' => false, 'message' => 'Complete fechas y horas de la toma']);
     exit;
 }
 
@@ -35,10 +38,21 @@ if (!$usuarioIds) {
     exit;
 }
 
-$date = DateTime::createFromFormat('Y-m-d', $fechaConteo);
-if (!$date || $date->format('Y-m-d') !== $fechaConteo) {
+$date = DateTime::createFromFormat('Y-m-d', $fechaHabilitacion);
+$endDate = DateTime::createFromFormat('Y-m-d', $fechaCierre);
+if (!$date || $date->format('Y-m-d') !== $fechaHabilitacion || !$endDate || $endDate->format('Y-m-d') !== $fechaCierre) {
     http_response_code(422);
     echo json_encode(['ok' => false, 'message' => 'Fecha invalida']);
+    exit;
+}
+if ($fechaCierre < $fechaHabilitacion) {
+    http_response_code(422);
+    echo json_encode(['ok' => false, 'message' => 'La fecha de finalizacion no puede ser menor a la habilitacion']);
+    exit;
+}
+if (!preg_match('/^\d{2}:\d{2}$/', $horaInicio) || !preg_match('/^\d{2}:\d{2}$/', $horaFin)) {
+    http_response_code(422);
+    echo json_encode(['ok' => false, 'message' => 'Hora invalida']);
     exit;
 }
 
@@ -72,13 +86,14 @@ try {
     $numeroToma = $year . '-' . str_pad((string) $nextSequence, 3, '0', STR_PAD_LEFT);
 
     $dayName = $days[(int) $date->format('N')];
-    $nombre = "TOMA FISICA # {$numeroToma}\nAGENCIA: {$agencia}\nFECHA: {$dayName} " . $date->format('d/m/Y');
+    $endDayName = $days[(int) $endDate->format('N')];
+    $nombre = "TOMA FISICA # {$numeroToma}\nAGENCIA: {$agencia}\nHABILITACION: {$dayName} " . $date->format('d/m/Y') . " {$horaInicio}\nFINALIZACION: {$endDayName} " . $endDate->format('d/m/Y') . " {$horaFin}";
 
     $stmt = $pdo->prepare(
-        'INSERT INTO tomas_fisicas (numero_toma, agencia, fecha_toma, nombre_toma, estado, creado_por)
-         VALUES (?, ?, ?, ?, "abierta", ?)'
+        'INSERT INTO tomas_fisicas (numero_toma, agencia, fecha_toma, fecha_habilitacion, fecha_cierre, hora_inicio, hora_fin, nombre_toma, estado, creado_por)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, "abierta", ?)'
     );
-    $stmt->execute([$numeroToma, $agencia, $fechaConteo, $nombre, (int) $_SESSION['usuario_id']]);
+    $stmt->execute([$numeroToma, $agencia !== '' ? $agencia : null, $fechaHabilitacion, $fechaHabilitacion, $fechaCierre, $horaInicio, $horaFin, $nombre, (int) $_SESSION['usuario_id']]);
     $tomaId = (int) $pdo->lastInsertId();
 
     $placeholders = implode(',', array_fill(0, count($usuarioIds), '?'));

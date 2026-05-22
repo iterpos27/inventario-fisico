@@ -44,12 +44,26 @@ function ensure_schema(PDO $pdo): void
     );
 
     $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS agencias (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            nombre VARCHAR(120) NOT NULL UNIQUE,
+            estado TINYINT(1) NOT NULL DEFAULT 1,
+            fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_agencias_estado (estado)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
+    $pdo->exec(
         "CREATE TABLE IF NOT EXISTS tomas_fisicas (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             numero_toma VARCHAR(20) NOT NULL UNIQUE,
-            agencia VARCHAR(120) NOT NULL,
+            agencia VARCHAR(120) NULL,
             fecha_toma DATE NOT NULL,
-            nombre_toma VARCHAR(220) NOT NULL,
+            fecha_habilitacion DATE NULL,
+            fecha_cierre DATE NULL,
+            hora_inicio TIME NULL,
+            hora_fin TIME NULL,
+            nombre_toma VARCHAR(500) NOT NULL,
             estado ENUM('abierta', 'finalizada') NOT NULL DEFAULT 'abierta',
             creado_por INT UNSIGNED NOT NULL,
             fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -111,6 +125,22 @@ function ensure_schema(PDO $pdo): void
     );
 
     ensure_column_exists($pdo, 'conteos', 'toma_id', 'toma_id INT UNSIGNED NULL AFTER id');
+    ensure_column_exists($pdo, 'tomas_fisicas', 'fecha_habilitacion', 'fecha_habilitacion DATE NULL AFTER fecha_toma');
+    ensure_column_exists($pdo, 'tomas_fisicas', 'fecha_cierre', 'fecha_cierre DATE NULL AFTER fecha_habilitacion');
+    ensure_column_exists($pdo, 'tomas_fisicas', 'hora_inicio', 'hora_inicio TIME NULL AFTER fecha_cierre');
+    ensure_column_exists($pdo, 'tomas_fisicas', 'hora_fin', 'hora_fin TIME NULL AFTER hora_inicio');
+
+    try {
+        $pdo->exec('ALTER TABLE tomas_fisicas MODIFY agencia VARCHAR(120) NULL');
+    } catch (Throwable $exception) {
+        // Instalaciones antiguas pueden conservar la definicion previa hasta una migracion manual.
+    }
+
+    try {
+        $pdo->exec('ALTER TABLE tomas_fisicas MODIFY nombre_toma VARCHAR(500) NOT NULL');
+    } catch (Throwable $exception) {
+        // La columna puede estar ya actualizada.
+    }
 
     try {
         $pdo->exec('ALTER TABLE conteos ADD INDEX idx_conteos_toma (toma_id)');
