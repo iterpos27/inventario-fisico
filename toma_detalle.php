@@ -68,6 +68,15 @@ require_once __DIR__ . '/includes/navbar.php';
         </div>
         <div class="quick-actions">
             <a class="btn btn-outline-primary" href="<?= BASE_URL ?>/conteos_borrador.php"><i class="bi bi-arrow-left"></i> Volver</a>
+            <form method="post" action="<?= BASE_URL ?>/actions/cambiar_estado_toma.php" onsubmit="return confirm('<?= $toma['estado'] === 'abierta' ? 'Cerrar esta toma? Los usuarios no podran seguir editando.' : 'Reabrir esta toma para permitir edicion?' ?>');">
+                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                <input type="hidden" name="toma_id" value="<?= (int) $toma['id'] ?>">
+                <input type="hidden" name="accion" value="<?= $toma['estado'] === 'abierta' ? 'cerrar' : 'reabrir' ?>">
+                <button class="btn <?= $toma['estado'] === 'abierta' ? 'btn-outline-danger' : 'btn-outline-primary' ?>" type="submit">
+                    <i class="bi <?= $toma['estado'] === 'abierta' ? 'bi-lock' : 'bi-unlock' ?>"></i>
+                    <?= $toma['estado'] === 'abierta' ? 'Cerrar toma' : 'Reabrir toma' ?>
+                </button>
+            </form>
             <?php if ($lineas > 0): ?>
                 <a class="btn btn-success" href="<?= BASE_URL ?>/actions/descargar_consolidado.php?toma_id=<?= (int) $toma['id'] ?>"><i class="bi bi-download"></i> Consolidado</a>
             <?php endif; ?>

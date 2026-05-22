@@ -414,6 +414,10 @@ body {
   flex-wrap: wrap;
 }
 
+.quick-actions form {
+  margin: 0;
+}
+
 .content-panel {
   padding: 16px;
 }
@@ -723,6 +727,17 @@ body {
 .btn-outline-primary:hover {
   background: var(--primary);
   border-color: var(--primary);
+}
+
+.btn-outline-danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn-outline-danger:hover {
+  color: #fff;
+  background: var(--danger);
+  border-color: var(--danger);
 }
 
 .form-control,
