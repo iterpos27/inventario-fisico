@@ -7,6 +7,7 @@ $conteoId = (int) ($_GET['id'] ?? 0);
 $conteo = null;
 $detalles = [];
 $tomasDisponibles = [];
+$usuariosParticipantes = [];
 $defaultYear = date('Y');
 $nextSequence = 1;
 $stmt = $pdo->prepare('SELECT numero_toma FROM tomas_fisicas WHERE numero_toma LIKE ? ORDER BY id DESC LIMIT 100');
@@ -54,6 +55,15 @@ if (current_user_role() !== 'admin' && $conteoId === 0) {
     $tomasDisponibles = $stmt->fetchAll();
 }
 
+if (current_user_role() === 'admin' && $conteoId === 0) {
+    $usuariosParticipantes = $pdo->query(
+        "SELECT id, nombre, usuario
+         FROM usuarios
+         WHERE rol = 'usuario' AND estado = 1
+         ORDER BY nombre"
+    )->fetchAll();
+}
+
 $pageTitle = 'Conteo movil - ' . APP_NAME;
 $conteoJsVersion = file_exists(__DIR__ . '/assets/js/conteo.js')
     ? (string) filemtime(__DIR__ . '/assets/js/conteo.js')
@@ -92,6 +102,29 @@ require_once __DIR__ . '/includes/navbar.php';
             </div>
         </div>
         <div class="count-preview mt-3" id="vistaNombreConteo"></div>
+        <div class="participants-box mt-3">
+            <div class="section-title split">
+                <h2>Usuarios participantes</h2>
+                <div class="participant-actions">
+                    <button class="btn btn-sm btn-outline-primary" id="seleccionarUsuarios" type="button">Todos</button>
+                    <button class="btn btn-sm btn-outline-secondary" id="limpiarUsuarios" type="button">Ninguno</button>
+                </div>
+            </div>
+            <div class="participants-grid">
+                <?php foreach ($usuariosParticipantes as $usuarioParticipante): ?>
+                    <label class="participant-option">
+                        <input class="participant-check" type="checkbox" value="<?= (int) $usuarioParticipante['id'] ?>" checked>
+                        <span>
+                            <strong><?= e($usuarioParticipante['nombre']) ?></strong>
+                            <small><?= e($usuarioParticipante['usuario']) ?></small>
+                        </span>
+                    </label>
+                <?php endforeach; ?>
+                <?php if (!$usuariosParticipantes): ?>
+                    <div class="empty-state">No hay usuarios operativos activos para asignar.</div>
+                <?php endif; ?>
+            </div>
+        </div>
         <button class="btn btn-primary btn-lg w-100 mt-3" id="crearConteo" type="button"><i class="bi bi-plus-circle"></i> Crear toma fisica</button>
     </section>
     <?php endif; ?>

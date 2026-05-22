@@ -161,8 +161,13 @@ async function crearConteo() {
   const agencia = $('agenciaConteo').value.trim().toUpperCase();
   const fechaConteo = $('fechaConteo').value;
   const nombre = buildNombreConteo();
+  const usuarios = getUsuariosSeleccionados();
   if (!agencia || !fechaConteo) {
     showMessage('Complete agencia y fecha', 'warning');
+    return;
+  }
+  if (usuarios.length === 0) {
+    showMessage('Seleccione al menos un usuario participante', 'warning');
     return;
   }
 
@@ -174,6 +179,7 @@ async function crearConteo() {
         csrf_token: $('csrfToken').value,
         agencia,
         fecha_conteo: fechaConteo,
+        usuarios,
       }),
     });
     const data = await response.json();
@@ -184,7 +190,7 @@ async function crearConteo() {
     $('conteoCreado').value = '1';
     state.created = true;
     if (userRole === 'admin') {
-      showMessage('Toma creada. Los usuarios ya pueden seleccionarla.');
+      showMessage(`Toma creada para ${data.usuarios_asignados || usuarios.length} usuario(s).`);
       setTimeout(() => {
         window.location.href = `${baseUrl}/conteos_borrador.php`;
       }, 900);
@@ -201,6 +207,12 @@ async function crearConteo() {
   } catch (error) {
     showMessage('No se pudo crear el conteo', 'danger');
   }
+}
+
+function getUsuariosSeleccionados() {
+  return Array.from(document.querySelectorAll('.participant-check:checked'))
+    .map((input) => Number(input.value))
+    .filter((id) => id > 0);
 }
 
 function formatDateLabel(value) {
@@ -245,6 +257,16 @@ $('buscarProducto')?.addEventListener('input', (event) => {
 });
 
 $('crearConteo')?.addEventListener('click', crearConteo);
+$('seleccionarUsuarios')?.addEventListener('click', () => {
+  document.querySelectorAll('.participant-check').forEach((input) => {
+    input.checked = true;
+  });
+});
+$('limpiarUsuarios')?.addEventListener('click', () => {
+  document.querySelectorAll('.participant-check').forEach((input) => {
+    input.checked = false;
+  });
+});
 $('numeroToma')?.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !state.created) crearConteo();
 });
