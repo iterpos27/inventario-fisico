@@ -11,7 +11,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 $pageLabel = match ($currentPage) {
     'dashboard.php', 'estadisticas.php', 'tendencias.php' => 'Panel',
     'conteo.php', 'toma_detalle.php', 'historial_conteos.php' => 'Conteo',
-    'reportes.php', 'reportes_diarios.php', 'reportes_mensuales.php', 'exportar.php' => 'Reportes',
+    'reportes.php' => 'Reportes',
     'productos.php' => 'Productos',
     'usuarios.php', 'configuracion.php' => 'Administracion',
     default => 'Inventario',
@@ -64,14 +64,7 @@ $layoutStarted = true;
                 </div>
             </details>
 
-            <details class="nav-section nav-reports<?= nav_section_class(['reportes.php', 'reportes_diarios.php', 'reportes_mensuales.php', 'exportar.php'], $currentPage) ?>"<?= nav_section_open(['reportes.php', 'reportes_diarios.php', 'reportes_mensuales.php', 'exportar.php'], $currentPage) ?>>
-                <summary><i class="bi bi-file-earmark-spreadsheet icon-reports"></i><span>Reportes</span><i class="bi bi-chevron-down nav-chevron"></i></summary>
-                <div class="nav-submenu">
-                    <a class="sidebar-sublink<?= nav_active('reportes_diarios.php', $currentPage) ?>" href="<?= BASE_URL ?>/reportes_diarios.php">Reportes diarios</a>
-                    <a class="sidebar-sublink<?= nav_active('reportes_mensuales.php', $currentPage) ?>" href="<?= BASE_URL ?>/reportes_mensuales.php">Reportes mensuales</a>
-                    <a class="sidebar-sublink<?= nav_active('exportar.php', $currentPage) ?>" href="<?= BASE_URL ?>/exportar.php">Exportar PDF/Excel</a>
-                </div>
-            </details>
+            <a class="sidebar-link<?= nav_active('reportes.php', $currentPage) ?>" href="<?= BASE_URL ?>/reportes.php"><i class="bi bi-file-earmark-spreadsheet icon-reports"></i><span>Reportes</span></a>
 
             <?php if (current_user_role() === 'admin'): ?>
             <a class="sidebar-link<?= nav_active('productos.php', $currentPage) ?>" href="<?= BASE_URL ?>/productos.php"><i class="bi bi-box-seam icon-products"></i><span>Productos</span></a>
