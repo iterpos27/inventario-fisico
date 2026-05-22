@@ -12,7 +12,7 @@ $pageLabel = match ($currentPage) {
     'dashboard.php', 'estadisticas.php', 'tendencias.php' => 'Panel',
     'conteo.php', 'toma_detalle.php', 'historial_conteos.php' => 'Conteo',
     'reportes.php', 'reportes_diarios.php', 'reportes_mensuales.php', 'exportar.php' => 'Reportes',
-    'productos.php', 'agregar_producto.php', 'importar_productos.php' => 'Productos',
+    'productos.php' => 'Productos',
     'usuarios.php', 'configuracion.php' => 'Administracion',
     default => 'Inventario',
 };
@@ -74,14 +74,7 @@ $layoutStarted = true;
             </details>
 
             <?php if (current_user_role() === 'admin'): ?>
-            <details class="nav-section nav-products<?= nav_section_class(['productos.php', 'agregar_producto.php', 'importar_productos.php'], $currentPage) ?>"<?= nav_section_open(['productos.php', 'agregar_producto.php', 'importar_productos.php'], $currentPage) ?>>
-                <summary><i class="bi bi-box-seam icon-products"></i><span>Productos</span><i class="bi bi-chevron-down nav-chevron"></i></summary>
-                <div class="nav-submenu">
-                    <a class="sidebar-sublink<?= nav_active('productos.php', $currentPage) ?>" href="<?= BASE_URL ?>/productos.php">Inventario</a>
-                    <a class="sidebar-sublink<?= nav_active('agregar_producto.php', $currentPage) ?>" href="<?= BASE_URL ?>/agregar_producto.php">Agregar producto</a>
-                    <a class="sidebar-sublink<?= nav_active('importar_productos.php', $currentPage) ?>" href="<?= BASE_URL ?>/importar_productos.php">Importar Excel</a>
-                </div>
-            </details>
+            <a class="sidebar-link<?= nav_active('productos.php', $currentPage) ?>" href="<?= BASE_URL ?>/productos.php"><i class="bi bi-box-seam icon-products"></i><span>Productos</span></a>
 
             <details class="nav-section nav-admin<?= nav_section_class(['usuarios.php', 'configuracion.php'], $currentPage) ?>"<?= nav_section_open(['usuarios.php', 'configuracion.php'], $currentPage) ?>>
                 <summary><i class="bi bi-gear icon-admin"></i><span>Administracion</span><i class="bi bi-chevron-down nav-chevron"></i></summary>

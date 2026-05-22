@@ -1,53 +1,18 @@
-const productosBaseUrl = window.BASE_URL || '';
-const productosInput = document.getElementById('buscarProductoAdmin');
-const productosBody = document.getElementById('productosResultados');
-let productosTimer = null;
+const modalEditarProducto = document.getElementById('modalEditarProducto');
 
-function escapeProductHtml(value) {
-  return String(value).replace(/[&<>"']/g, (char) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  }[char]));
-}
+modalEditarProducto?.addEventListener('show.bs.modal', (event) => {
+  const button = event.relatedTarget;
+  if (!button) return;
 
-function renderProductos(products, message = '') {
-  if (!productosBody) return;
-  if (message) {
-    productosBody.innerHTML = `<tr><td colspan="2" class="text-center text-secondary py-4">${escapeProductHtml(message)}</td></tr>`;
-    return;
-  }
-  if (!products.length) {
-    productosBody.innerHTML = '<tr><td colspan="2" class="text-center text-secondary py-4">No se encontraron productos.</td></tr>';
-    return;
-  }
-  productosBody.innerHTML = products.map((product) => `
-    <tr>
-      <td class="fw-semibold">${escapeProductHtml(product.codigo)}</td>
-      <td>${escapeProductHtml(product.descripcion)}</td>
-    </tr>
-  `).join('');
-}
+  document.getElementById('editarProductoId').value = button.dataset.productId || '';
+  document.getElementById('editarProductoCodigo').value = button.dataset.productCode || '';
+  document.getElementById('editarProductoDescripcion').value = button.dataset.productDescription || '';
+});
 
-async function buscarProductosAdmin(query) {
-  const q = query.trim();
-  if (q.length < 2) {
-    renderProductos([], 'Busque por codigo o descripcion.');
-    return;
-  }
-
-  try {
-    const response = await fetch(`${productosBaseUrl}/actions/buscar_producto.php?q=${encodeURIComponent(q)}`);
-    const products = await response.json();
-    renderProductos(products);
-  } catch (error) {
-    renderProductos([], 'No se pudo buscar productos.');
-  }
-}
-
-productosInput?.addEventListener('input', (event) => {
-  clearTimeout(productosTimer);
-  productosTimer = setTimeout(() => buscarProductosAdmin(event.target.value), 220);
+document.querySelectorAll('[data-delete-product]').forEach((form) => {
+  form.addEventListener('submit', (event) => {
+    if (!confirm('Eliminar este producto del inventario activo?')) {
+      event.preventDefault();
+    }
+  });
 });

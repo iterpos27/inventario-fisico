@@ -8,23 +8,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?
     exit;
 }
 
+$id = (int) ($_POST['id'] ?? 0);
 $codigo = trim((string) ($_POST['codigo'] ?? ''));
 $descripcion = trim((string) ($_POST['descripcion'] ?? ''));
 
-if ($codigo === '' || $descripcion === '') {
+if ($id <= 0 || $codigo === '' || $descripcion === '') {
     header('Location: ' . BASE_URL . '/productos.php?error=Complete codigo y descripcion');
     exit;
 }
 
 try {
-    $stmt = $pdo->prepare(
-        'INSERT INTO productos (codigo, descripcion, estado)
-         VALUES (?, ?, 1)
-         ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion), estado = 1'
-    );
-    $stmt->execute([$codigo, $descripcion]);
-    header('Location: ' . BASE_URL . '/productos.php?msg=Producto guardado correctamente');
+    $stmt = $pdo->prepare('UPDATE productos SET codigo = ?, descripcion = ?, estado = 1 WHERE id = ?');
+    $stmt->execute([$codigo, $descripcion, $id]);
+    header('Location: ' . BASE_URL . '/productos.php?msg=Producto actualizado correctamente');
 } catch (Throwable $exception) {
-    header('Location: ' . BASE_URL . '/productos.php?error=No se pudo guardar el producto');
+    header('Location: ' . BASE_URL . '/productos.php?error=No se pudo actualizar el producto. Revise si el codigo ya existe.');
 }
 exit;

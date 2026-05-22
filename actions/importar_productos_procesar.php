@@ -4,13 +4,13 @@ require_once __DIR__ . '/../includes/auth.php';
 require_admin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?? null)) {
-    header('Location: ' . BASE_URL . '/importar_productos.php?error=Solicitud invalida');
+    header('Location: ' . BASE_URL . '/productos.php?error=Solicitud invalida');
     exit;
 }
 
 $autoload = __DIR__ . '/../vendor/autoload.php';
 if (!file_exists($autoload)) {
-    header('Location: ' . BASE_URL . '/importar_productos.php?error=Instale dependencias con composer require phpoffice/phpspreadsheet');
+    header('Location: ' . BASE_URL . '/productos.php?error=Instale dependencias con composer require phpoffice/phpspreadsheet');
     exit;
 }
 require_once $autoload;
@@ -24,20 +24,20 @@ foreach (['zip', 'gd'] as $extension) {
     }
 }
 if ($missingPhpExtensions) {
-    header('Location: ' . BASE_URL . '/importar_productos.php?error=' . urlencode(
+    header('Location: ' . BASE_URL . '/productos.php?error=' . urlencode(
         'Apache no tiene activas las extensiones PHP requeridas: ' . implode(', ', $missingPhpExtensions) . '. Active las extensiones en XAMPP y reinicie Apache.'
     ));
     exit;
 }
 
 if (empty($_FILES['archivo']['tmp_name']) || $_FILES['archivo']['error'] !== UPLOAD_ERR_OK) {
-    header('Location: ' . BASE_URL . '/importar_productos.php?error=Seleccione un archivo valido');
+    header('Location: ' . BASE_URL . '/productos.php?error=Seleccione un archivo valido');
     exit;
 }
 
 $extension = strtolower(pathinfo($_FILES['archivo']['name'], PATHINFO_EXTENSION));
 if (!in_array($extension, ['xlsx', 'xls', 'csv'], true)) {
-    header('Location: ' . BASE_URL . '/importar_productos.php?error=Formato no permitido');
+    header('Location: ' . BASE_URL . '/productos.php?error=Formato no permitido');
     exit;
 }
 
@@ -88,11 +88,11 @@ try {
     }
     $pdo->commit();
 
-    header('Location: ' . BASE_URL . '/importar_productos.php?msg=' . urlencode("Importacion completada: {$procesados} productos procesados"));
+    header('Location: ' . BASE_URL . '/productos.php?msg=' . urlencode("Importacion completada: {$procesados} productos procesados"));
 } catch (Throwable $exception) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    header('Location: ' . BASE_URL . '/importar_productos.php?error=' . urlencode('No se pudo importar: ' . $exception->getMessage()));
+    header('Location: ' . BASE_URL . '/productos.php?error=' . urlencode('No se pudo importar: ' . $exception->getMessage()));
 }
 exit;

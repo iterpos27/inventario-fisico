@@ -576,6 +576,28 @@ body {
   margin: 0;
 }
 
+.table-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.table-actions form {
+  margin: 0;
+}
+
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .content-panel {
   padding: 16px;
 }
@@ -896,6 +918,12 @@ body {
   color: #fff;
   background: var(--danger);
   border-color: var(--danger);
+}
+
+.btn.disabled,
+.btn:disabled {
+  pointer-events: none;
+  opacity: 0.55;
 }
 
 .form-control,
