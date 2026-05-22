@@ -1,4 +1,14 @@
 const modalEditarProducto = document.getElementById('modalEditarProducto');
+const formBuscarProductoAdmin = document.getElementById('formBuscarProductoAdmin');
+const buscarProductoAdmin = document.getElementById('buscarProductoAdmin');
+let buscarProductoTimer = null;
+
+buscarProductoAdmin?.addEventListener('input', () => {
+  clearTimeout(buscarProductoTimer);
+  buscarProductoTimer = setTimeout(() => {
+    formBuscarProductoAdmin?.requestSubmit();
+  }, 420);
+});
 
 modalEditarProducto?.addEventListener('show.bs.modal', (event) => {
   const button = event.relatedTarget;

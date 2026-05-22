@@ -106,12 +106,11 @@ require_once __DIR__ . '/includes/navbar.php';
     <?php endif; ?>
 
     <section class="count-tool mb-3">
-        <form class="search-row" action="<?= BASE_URL ?>/productos.php" method="get">
-            <div>
-                <label class="form-label" for="buscarProductoAdmin">Buscar producto</label>
+        <form action="<?= BASE_URL ?>/productos.php" method="get" id="formBuscarProductoAdmin">
+            <label class="form-label" for="buscarProductoAdmin">Buscar producto</label>
+            <div class="position-relative">
                 <input class="form-control form-control-lg search-input" id="buscarProductoAdmin" name="q" value="<?= e($q) ?>" placeholder="Codigo o descripcion" autocomplete="off">
             </div>
-            <button class="btn btn-primary btn-lg align-self-end" type="submit"><i class="bi bi-search"></i> Buscar</button>
         </form>
     </section>
 
