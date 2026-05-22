@@ -75,13 +75,18 @@ $layoutStarted = true;
 
     </aside>
 
-    <nav class="mobile-bottom-nav" aria-label="Menu movil">
+    <div class="mobile-menu-backdrop" data-mobile-menu-close></div>
+    <nav class="mobile-slide-nav" id="mobileMenu" aria-label="Menu movil">
+        <div class="mobile-slide-head">
+            <strong>Menu</strong>
+            <button type="button" data-mobile-menu-close aria-label="Cerrar menu"><i class="bi bi-list"></i></button>
+        </div>
         <?php if (current_user_role() === 'admin'): ?>
-            <a class="<?= nav_active('dashboard.php', $currentPage) ?>" href="<?= BASE_URL ?>/dashboard.php"><i class="bi bi-speedometer2"></i><span>Panel</span></a>
+            <a class="<?= nav_active('dashboard.php', $currentPage) ?>" href="<?= BASE_URL ?>/dashboard.php"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
             <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-clipboard-check"></i><span>Conteo</span></a>
             <a class="<?= nav_active('reportes.php', $currentPage) ?>" href="<?= BASE_URL ?>/reportes.php"><i class="bi bi-file-earmark-spreadsheet"></i><span>Reportes</span></a>
             <a class="<?= nav_active('productos.php', $currentPage) ?>" href="<?= BASE_URL ?>/productos.php"><i class="bi bi-box-seam"></i><span>Productos</span></a>
-            <a class="<?= nav_active('usuarios.php', $currentPage) . nav_active('agencias.php', $currentPage) . nav_active('configuracion.php', $currentPage) ?>" href="<?= BASE_URL ?>/usuarios.php"><i class="bi bi-gear"></i><span>Admin</span></a>
+            <a class="<?= nav_active('usuarios.php', $currentPage) . nav_active('agencias.php', $currentPage) . nav_active('configuracion.php', $currentPage) ?>" href="<?= BASE_URL ?>/usuarios.php"><i class="bi bi-gear"></i><span>Administracion</span></a>
         <?php else: ?>
             <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-clipboard-check"></i><span>Conteo</span></a>
             <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= BASE_URL ?>/historial_conteos.php"><i class="bi bi-clock-history"></i><span>Historial</span></a>
@@ -94,17 +99,43 @@ $layoutStarted = true;
                 <span><?= current_user_name() ?></span>
                 <h1><?= e($pageLabel) ?></h1>
             </div>
-            <details class="topbar-user-menu">
-                <summary>
-                    <i class="bi bi-person-circle"></i>
-                    <span>
-                        <strong><?= current_user_name() ?></strong>
-                        <small><?= current_user_role() === 'admin' ? 'Administrador' : 'Usuario' ?></small>
-                    </span>
-                    <i class="bi bi-chevron-down"></i>
-                </summary>
-                <div class="topbar-user-dropdown">
-                    <a href="<?= BASE_URL ?>/logout.php"><i class="bi bi-box-arrow-right"></i> Salir</a>
-                </div>
-            </details>
+            <div class="topbar-actions">
+                <details class="topbar-user-menu">
+                    <summary>
+                        <i class="bi bi-person-circle"></i>
+                        <span>
+                            <strong><?= current_user_name() ?></strong>
+                            <small><?= current_user_role() === 'admin' ? 'Administrador' : 'Usuario' ?></small>
+                        </span>
+                        <i class="bi bi-chevron-down"></i>
+                    </summary>
+                    <div class="topbar-user-dropdown">
+                        <a href="<?= BASE_URL ?>/logout.php"><i class="bi bi-box-arrow-right"></i> Salir</a>
+                    </div>
+                </details>
+                <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-controls="mobileMenu" aria-expanded="false">
+                    <i class="bi bi-list"></i>
+                </button>
+            </div>
         </header>
+        <script>
+        (() => {
+            const body = document.body;
+            const menu = document.getElementById('mobileMenu');
+            const toggle = document.querySelector('[data-mobile-menu-toggle]');
+            const closers = document.querySelectorAll('[data-mobile-menu-close]');
+            if (!menu || !toggle) return;
+
+            const setOpen = (open) => {
+                body.classList.toggle('mobile-menu-open', open);
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            };
+
+            toggle.addEventListener('click', () => setOpen(!body.classList.contains('mobile-menu-open')));
+            closers.forEach((closer) => closer.addEventListener('click', () => setOpen(false)));
+            menu.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => setOpen(false)));
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') setOpen(false);
+            });
+        })();
+        </script>
