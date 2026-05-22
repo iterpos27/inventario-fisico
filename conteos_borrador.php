@@ -51,7 +51,7 @@ require_once __DIR__ . '/includes/navbar.php';
             <table class="table align-middle">
                 <thead>
                     <?php if (current_user_role() === 'admin'): ?>
-                        <tr><th>Toma fisica</th><th>Asignados</th><th>En proceso</th><th>Finalizados</th><th>Creacion</th></tr>
+                        <tr><th>Toma fisica</th><th>Asignados</th><th>En proceso</th><th>Finalizados</th><th>Creacion</th><th></th></tr>
                     <?php else: ?>
                         <tr><th>Toma fisica</th><th>Estado</th><th>Lineas</th><th>Creacion</th><th></th></tr>
                     <?php endif; ?>
@@ -65,6 +65,7 @@ require_once __DIR__ . '/includes/navbar.php';
                                 <td><?= (int) $toma['en_proceso'] ?></td>
                                 <td><?= (int) $toma['finalizados'] ?></td>
                                 <td><?= e($toma['fecha_creacion']) ?></td>
+                                <td><a class="btn btn-sm btn-outline-primary" href="<?= BASE_URL ?>/toma_detalle.php?id=<?= (int) $toma['id'] ?>">Ver detalle</a></td>
                             </tr>
                         <?php else: ?>
                             <tr>
@@ -79,7 +80,7 @@ require_once __DIR__ . '/includes/navbar.php';
                         <?php endif; ?>
                     <?php endforeach; ?>
                     <?php if (!$tomas): ?>
-                        <tr><td colspan="5" class="text-center text-secondary py-4">No hay borradores disponibles.</td></tr>
+                        <tr><td colspan="6" class="text-center text-secondary py-4">No hay borradores disponibles.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

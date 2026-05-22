@@ -57,7 +57,7 @@ require_once __DIR__ . '/includes/navbar.php';
         <div class="section-title"><h2>Consolidado por toma fisica</h2></div>
         <div class="table-responsive">
             <table class="table align-middle">
-                <thead><tr><th>Toma fisica</th><th>Estado</th><th>Usuarios</th><th>Finalizados</th><th>Fin</th><th>Excel</th></tr></thead>
+                <thead><tr><th>Toma fisica</th><th>Estado</th><th>Usuarios</th><th>Finalizados</th><th>Fin</th><th>Excel</th><th></th></tr></thead>
                 <tbody>
                     <?php foreach ($tomas as $toma): ?>
                         <tr>
@@ -73,10 +73,11 @@ require_once __DIR__ . '/includes/navbar.php';
                                     <span class="text-secondary">Pendiente</span>
                                 <?php endif; ?>
                             </td>
+                            <td><a class="btn btn-sm btn-outline-primary" href="<?= BASE_URL ?>/toma_detalle.php?id=<?= (int) $toma['id'] ?>">Ver detalle</a></td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if (!$tomas): ?>
-                        <tr><td colspan="6" class="text-center text-secondary py-4">No hay tomas para mostrar.</td></tr>
+                        <tr><td colspan="7" class="text-center text-secondary py-4">No hay tomas para mostrar.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

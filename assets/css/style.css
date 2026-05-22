@@ -467,6 +467,26 @@ body {
   white-space: pre-line;
 }
 
+.detail-header {
+  display: grid;
+  gap: 12px;
+}
+
+.detail-header h2 {
+  margin: 10px 0 0;
+  color: #003b79;
+  font-size: 1.25rem;
+  line-height: 1.4;
+  white-space: pre-line;
+}
+
+.detail-meta {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .count-preview {
   padding: 12px;
   border: 1px dashed var(--line);
@@ -774,6 +794,11 @@ body {
 
   .participants-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detail-header {
+    grid-template-columns: 1fr auto;
+    align-items: start;
   }
 
   .mobile-actions {
