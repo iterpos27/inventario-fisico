@@ -4,17 +4,20 @@ require_once __DIR__ . '/includes/auth.php';
 require_login();
 
 $totalProductos = (int) $pdo->query('SELECT COUNT(*) FROM productos WHERE estado = 1')->fetchColumn();
-$conteosBorrador = (int) $pdo->query("SELECT COUNT(*) FROM conteos WHERE estado = 'borrador'")->fetchColumn();
+$tomasAbiertas = (int) $pdo->query("SELECT COUNT(*) FROM tomas_fisicas WHERE estado = 'abierta'")->fetchColumn();
 $conteosFinalizados = (int) $pdo->query("SELECT COUNT(*) FROM conteos WHERE estado = 'finalizado'")->fetchColumn();
 
 $stmt = $pdo->query(
-    "SELECT c.id, c.nombre_conteo, c.estado, c.fecha_inicio, c.fecha_finalizacion, u.nombre
-     FROM conteos c
-     INNER JOIN usuarios u ON u.id = c.usuario_id
-     ORDER BY c.id DESC
+    "SELECT t.id, t.nombre_toma, t.estado, t.fecha_creacion, t.fecha_finalizacion,
+            COUNT(tu.id) AS asignados,
+            SUM(CASE WHEN tu.estado = 'finalizado' THEN 1 ELSE 0 END) AS finalizados
+     FROM tomas_fisicas t
+     LEFT JOIN toma_usuarios tu ON tu.toma_id = t.id
+     GROUP BY t.id, t.nombre_toma, t.estado, t.fecha_creacion, t.fecha_finalizacion
+     ORDER BY t.id DESC
      LIMIT 8"
 );
-$ultimosConteos = $stmt->fetchAll();
+$ultimasTomas = $stmt->fetchAll();
 
 $pageTitle = 'Panel - ' . APP_NAME;
 require_once __DIR__ . '/includes/header.php';
@@ -38,8 +41,8 @@ require_once __DIR__ . '/includes/navbar.php';
         </div>
         <div class="col-6 col-lg-4">
             <div class="metric-card warning">
-                <span>Borradores</span>
-                <strong><?= $conteosBorrador ?></strong>
+                <span>Tomas abiertas</span>
+                <strong><?= $tomasAbiertas ?></strong>
             </div>
         </div>
         <div class="col-12 col-lg-4">
@@ -60,31 +63,31 @@ require_once __DIR__ . '/includes/navbar.php';
 
     <section class="content-panel mt-4">
         <div class="section-title">
-            <h2>Ultimos conteos</h2>
+            <h2>Ultimas tomas fisicas</h2>
         </div>
         <div class="table-responsive">
             <table class="table align-middle">
                 <thead>
                     <tr>
-                        <th>Conteo</th>
-                        <th>Usuario</th>
+                        <th>Toma fisica</th>
+                        <th>Usuarios</th>
                         <th>Estado</th>
-                        <th>Inicio</th>
+                        <th>Creacion</th>
                         <th>Fin</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($ultimosConteos as $conteo): ?>
+                    <?php foreach ($ultimasTomas as $toma): ?>
                         <tr>
-                            <td><?= e($conteo['nombre_conteo']) ?></td>
-                            <td><?= e($conteo['nombre']) ?></td>
-                            <td><span class="badge text-bg-<?= $conteo['estado'] === 'finalizado' ? 'success' : 'warning' ?>"><?= e($conteo['estado']) ?></span></td>
-                            <td><?= e($conteo['fecha_inicio']) ?></td>
-                            <td><?= e($conteo['fecha_finalizacion'] ?? '-') ?></td>
+                            <td class="count-name"><?= nl2br(e($toma['nombre_toma'])) ?></td>
+                            <td><?= (int) $toma['finalizados'] ?> / <?= (int) $toma['asignados'] ?></td>
+                            <td><span class="badge text-bg-<?= $toma['estado'] === 'finalizada' ? 'success' : 'warning' ?>"><?= e($toma['estado']) ?></span></td>
+                            <td><?= e($toma['fecha_creacion']) ?></td>
+                            <td><?= e($toma['fecha_finalizacion'] ?? '-') ?></td>
                         </tr>
                     <?php endforeach; ?>
-                    <?php if (!$ultimosConteos): ?>
-                        <tr><td colspan="5" class="text-center text-secondary py-4">Aun no hay conteos registrados.</td></tr>
+                    <?php if (!$ultimasTomas): ?>
+                        <tr><td colspan="5" class="text-center text-secondary py-4">Aun no hay tomas registradas.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

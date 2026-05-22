@@ -29,13 +29,12 @@ if (!is_array($payload) || !verify_csrf($payload['csrf_token'] ?? null)) {
     exit;
 }
 
-$nombre = trim((string) ($payload['nombre_conteo'] ?? ''));
 $items = $payload['items'] ?? [];
 $conteoId = (int) ($payload['conteo_id'] ?? 0);
 
-if ($nombre === '' || !is_array($items) || count($items) === 0) {
+if (!is_array($items) || count($items) === 0) {
     http_response_code(422);
-    echo json_encode(['ok' => false, 'message' => 'Ingrese nombre y productos']);
+    echo json_encode(['ok' => false, 'message' => 'Ingrese productos']);
     exit;
 }
 if ($conteoId <= 0) {
@@ -47,20 +46,19 @@ if ($conteoId <= 0) {
 try {
     $pdo->beginTransaction();
 
-    if ($conteoId > 0) {
-        $stmt = $pdo->prepare(
-            "SELECT c.id
-             FROM conteos c
-             INNER JOIN usuarios u ON u.id = c.usuario_id
-             WHERE c.id = ? AND c.estado = 'borrador' AND (c.usuario_id = ? OR u.rol = 'admin')"
-        );
-        $stmt->execute([$conteoId, (int) $_SESSION['usuario_id']]);
-        if (!$stmt->fetch()) {
-            throw new RuntimeException('Conteo no disponible');
-        }
-        $pdo->prepare('UPDATE conteos SET usuario_id = ?, nombre_conteo = ? WHERE id = ?')->execute([(int) $_SESSION['usuario_id'], $nombre, $conteoId]);
-        $pdo->prepare('DELETE FROM conteo_detalle WHERE conteo_id = ?')->execute([$conteoId]);
+    $stmt = $pdo->prepare(
+        "SELECT c.id, c.toma_id
+         FROM conteos c
+         INNER JOIN tomas_fisicas t ON t.id = c.toma_id
+         WHERE c.id = ? AND c.usuario_id = ? AND c.estado = 'borrador' AND t.estado = 'abierta'"
+    );
+    $stmt->execute([$conteoId, (int) $_SESSION['usuario_id']]);
+    $conteoActivo = $stmt->fetch();
+    if (!$conteoActivo) {
+        throw new RuntimeException('Conteo no disponible');
     }
+    $tomaId = (int) $conteoActivo['toma_id'];
+    $pdo->prepare('DELETE FROM conteo_detalle WHERE conteo_id = ?')->execute([$conteoId]);
 
     $stmtProducto = $pdo->prepare('SELECT codigo, descripcion FROM productos WHERE id = ? AND estado = 1');
     $stmtDetalle = $pdo->prepare(
@@ -119,6 +117,22 @@ try {
 
     $stmt = $pdo->prepare("UPDATE conteos SET estado = 'finalizado', fecha_finalizacion = NOW(), archivo_excel = ? WHERE id = ?");
     $stmt->execute([$relativePath, $conteoId]);
+
+    $stmt = $pdo->prepare("UPDATE toma_usuarios SET estado = 'finalizado' WHERE toma_id = ? AND usuario_id = ?");
+    $stmt->execute([$tomaId, (int) $_SESSION['usuario_id']]);
+
+    $stmt = $pdo->prepare(
+        "SELECT COUNT(*) AS asignados,
+                SUM(CASE WHEN estado = 'finalizado' THEN 1 ELSE 0 END) AS finalizados
+         FROM toma_usuarios
+         WHERE toma_id = ?"
+    );
+    $stmt->execute([$tomaId]);
+    $avance = $stmt->fetch();
+    if ($avance && (int) $avance['asignados'] > 0 && (int) $avance['asignados'] === (int) $avance['finalizados']) {
+        $stmt = $pdo->prepare("UPDATE tomas_fisicas SET estado = 'finalizada', fecha_finalizacion = NOW() WHERE id = ?");
+        $stmt->execute([$tomaId]);
+    }
 
     $pdo->commit();
     echo json_encode([

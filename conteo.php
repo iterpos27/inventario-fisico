@@ -6,25 +6,24 @@ require_login();
 $conteoId = (int) ($_GET['id'] ?? 0);
 $conteo = null;
 $detalles = [];
-$conteosDisponibles = [];
+$tomasDisponibles = [];
 $defaultYear = date('Y');
 $nextSequence = 1;
-$stmt = $pdo->prepare('SELECT nombre_conteo FROM conteos WHERE nombre_conteo LIKE ? ORDER BY id DESC LIMIT 100');
-$stmt->execute(["TOMA FISICA # {$defaultYear}-%"]);
+$stmt = $pdo->prepare('SELECT numero_toma FROM tomas_fisicas WHERE numero_toma LIKE ? ORDER BY id DESC LIMIT 100');
+$stmt->execute(["{$defaultYear}-%"]);
 foreach ($stmt->fetchAll() as $row) {
-    if (preg_match('/TOMA FISICA # ' . preg_quote($defaultYear, '/') . '-(\d{3})/', (string) $row['nombre_conteo'], $matches)) {
+    if (preg_match('/^' . preg_quote($defaultYear, '/') . '-(\d{3})$/', (string) $row['numero_toma'], $matches)) {
         $nextSequence = max($nextSequence, (int) $matches[1] + 1);
     }
 }
 $defaultToma = $defaultYear . '-' . str_pad((string) $nextSequence, 3, '0', STR_PAD_LEFT);
 
 if ($conteoId > 0) {
-    $sql = 'SELECT c.* FROM conteos c INNER JOIN usuarios u ON u.id = c.usuario_id WHERE c.id = ?';
-    $params = [$conteoId];
-    if (current_user_role() !== 'admin') {
-        $sql .= " AND (c.usuario_id = ? OR u.rol = 'admin')";
-        $params[] = (int) $_SESSION['usuario_id'];
-    }
+    $sql = 'SELECT c.*, t.numero_toma, t.agencia, t.fecha_toma
+            FROM conteos c
+            LEFT JOIN tomas_fisicas t ON t.id = c.toma_id
+            WHERE c.id = ? AND c.usuario_id = ?';
+    $params = [$conteoId, (int) $_SESSION['usuario_id']];
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $conteo = $stmt->fetch();
@@ -41,16 +40,18 @@ if ($conteoId > 0) {
 
 if (current_user_role() !== 'admin' && $conteoId === 0) {
     $stmt = $pdo->prepare(
-        "SELECT c.id, c.nombre_conteo, c.fecha_inicio, u.nombre AS responsable, COUNT(d.id) AS lineas
-         FROM conteos c
-         INNER JOIN usuarios u ON u.id = c.usuario_id
+        "SELECT t.id AS toma_id, t.nombre_toma, t.fecha_creacion, tu.estado AS asignacion_estado,
+                c.id AS conteo_id, c.estado AS conteo_estado, COUNT(d.id) AS lineas
+         FROM toma_usuarios tu
+         INNER JOIN tomas_fisicas t ON t.id = tu.toma_id
+         LEFT JOIN conteos c ON c.toma_id = t.id AND c.usuario_id = tu.usuario_id
          LEFT JOIN conteo_detalle d ON d.conteo_id = c.id
-         WHERE c.estado = 'borrador' AND (c.usuario_id = ? OR u.rol = 'admin')
-         GROUP BY c.id, c.nombre_conteo, c.fecha_inicio, u.nombre
-         ORDER BY c.id DESC"
+         WHERE tu.usuario_id = ? AND t.estado = 'abierta'
+         GROUP BY t.id, t.nombre_toma, t.fecha_creacion, tu.estado, c.id, c.estado
+         ORDER BY t.id DESC"
     );
     $stmt->execute([(int) $_SESSION['usuario_id']]);
-    $conteosDisponibles = $stmt->fetchAll();
+    $tomasDisponibles = $stmt->fetchAll();
 }
 
 $pageTitle = 'Conteo movil - ' . APP_NAME;
@@ -75,7 +76,7 @@ require_once __DIR__ . '/includes/navbar.php';
 
     <?php if (current_user_role() === 'admin' && !$conteo): ?>
     <section id="crearConteoPanel" class="content-panel mb-3">
-        <div class="section-title"><h2>Crear operacion de conteo</h2></div>
+        <div class="section-title"><h2>Crear toma fisica</h2></div>
         <div class="row g-3">
             <div class="col-md-4">
                 <label class="form-label" for="numeroToma">Toma fisica #</label>
@@ -91,7 +92,7 @@ require_once __DIR__ . '/includes/navbar.php';
             </div>
         </div>
         <div class="count-preview mt-3" id="vistaNombreConteo"></div>
-        <button class="btn btn-primary btn-lg w-100 mt-3" id="crearConteo" type="button"><i class="bi bi-plus-circle"></i> Crear conteo</button>
+        <button class="btn btn-primary btn-lg w-100 mt-3" id="crearConteo" type="button"><i class="bi bi-plus-circle"></i> Crear toma fisica</button>
     </section>
     <?php endif; ?>
 
@@ -99,13 +100,13 @@ require_once __DIR__ . '/includes/navbar.php';
         <section class="content-panel mb-3">
             <div class="section-title"><h2>Conteos disponibles</h2></div>
             <div class="count-list">
-                <?php foreach ($conteosDisponibles as $disponible): ?>
-                    <a class="available-count" href="<?= BASE_URL ?>/conteo.php?id=<?= (int) $disponible['id'] ?>">
-                        <span><?= nl2br(e($disponible['nombre_conteo'])) ?></span>
-                        <small><?= (int) $disponible['lineas'] ?> lineas registradas</small>
+                <?php foreach ($tomasDisponibles as $disponible): ?>
+                    <a class="available-count" href="<?= BASE_URL ?>/actions/iniciar_conteo.php?toma_id=<?= (int) $disponible['toma_id'] ?>">
+                        <span><?= nl2br(e($disponible['nombre_toma'])) ?></span>
+                        <small><?= (int) $disponible['lineas'] ?> lineas registradas · <?= $disponible['conteo_estado'] === 'borrador' ? 'Continuar' : 'Empezar' ?></small>
                     </a>
                 <?php endforeach; ?>
-                <?php if (!$conteosDisponibles): ?>
+                <?php if (!$tomasDisponibles): ?>
                     <div class="empty-state">No hay conteos disponibles. Solicite al administrador crear una toma fisica.</div>
                 <?php endif; ?>
             </div>

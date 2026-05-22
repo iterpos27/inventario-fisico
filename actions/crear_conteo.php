@@ -48,23 +48,42 @@ $dayName = $days[(int) $date->format('N')];
 $nombre = "TOMA FISICA # {$numeroToma}\nAGENCIA: {$agencia}\nFECHA: {$dayName} " . $date->format('d/m/Y');
 
 try {
-    $stmt = $pdo->prepare('SELECT COUNT(*) FROM conteos WHERE nombre_conteo LIKE ?');
-    $stmt->execute(["TOMA FISICA # {$numeroToma}%"]);
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM tomas_fisicas WHERE numero_toma = ?');
+    $stmt->execute([$numeroToma]);
     if ((int) $stmt->fetchColumn() > 0) {
         http_response_code(409);
         echo json_encode(['ok' => false, 'message' => 'Ya existe una toma con ese numero']);
         exit;
     }
 
-    $stmt = $pdo->prepare('INSERT INTO conteos (usuario_id, nombre_conteo, estado, fecha_inicio) VALUES (?, ?, "borrador", NOW())');
-    $stmt->execute([(int) $_SESSION['usuario_id'], $nombre]);
+    $pdo->beginTransaction();
+
+    $stmt = $pdo->prepare(
+        'INSERT INTO tomas_fisicas (numero_toma, agencia, fecha_toma, nombre_toma, estado, creado_por)
+         VALUES (?, ?, ?, ?, "abierta", ?)'
+    );
+    $stmt->execute([$numeroToma, $agencia, $fechaConteo, $nombre, (int) $_SESSION['usuario_id']]);
+    $tomaId = (int) $pdo->lastInsertId();
+
+    $usuarios = $pdo->query("SELECT id FROM usuarios WHERE rol = 'usuario' AND estado = 1")->fetchAll();
+    $stmtAsignar = $pdo->prepare('INSERT INTO toma_usuarios (toma_id, usuario_id) VALUES (?, ?)');
+    foreach ($usuarios as $usuario) {
+        $stmtAsignar->execute([$tomaId, (int) $usuario['id']]);
+    }
+
+    $pdo->commit();
+
     echo json_encode([
         'ok' => true,
-        'conteo_id' => (int) $pdo->lastInsertId(),
+        'toma_id' => $tomaId,
+        'conteo_id' => 0,
         'nombre_conteo' => $nombre,
-        'message' => 'Conteo creado',
+        'message' => 'Toma fisica creada para usuarios activos',
     ]);
 } catch (Throwable $exception) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     http_response_code(500);
-    echo json_encode(['ok' => false, 'message' => 'No se pudo crear el conteo']);
+    echo json_encode(['ok' => false, 'message' => 'No se pudo crear la toma fisica']);
 }

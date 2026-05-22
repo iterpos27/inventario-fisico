@@ -24,17 +24,49 @@ CREATE TABLE IF NOT EXISTS productos (
   INDEX idx_productos_estado (estado)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS tomas_fisicas (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  numero_toma VARCHAR(20) NOT NULL UNIQUE,
+  agencia VARCHAR(120) NOT NULL,
+  fecha_toma DATE NOT NULL,
+  nombre_toma VARCHAR(220) NOT NULL,
+  estado ENUM('abierta', 'finalizada') NOT NULL DEFAULT 'abierta',
+  creado_por INT UNSIGNED NOT NULL,
+  fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  fecha_finalizacion DATETIME NULL,
+  archivo_excel VARCHAR(255) NULL,
+  CONSTRAINT fk_tomas_creador FOREIGN KEY (creado_por) REFERENCES usuarios(id),
+  INDEX idx_tomas_estado (estado),
+  INDEX idx_tomas_fecha (fecha_toma)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS toma_usuarios (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  toma_id INT UNSIGNED NOT NULL,
+  usuario_id INT UNSIGNED NOT NULL,
+  estado ENUM('asignado', 'en_proceso', 'finalizado') NOT NULL DEFAULT 'asignado',
+  fecha_asignacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_toma_usuarios_toma FOREIGN KEY (toma_id) REFERENCES tomas_fisicas(id) ON DELETE CASCADE,
+  CONSTRAINT fk_toma_usuarios_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+  UNIQUE KEY uq_toma_usuario (toma_id, usuario_id),
+  INDEX idx_toma_usuarios_estado (estado)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS conteos (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  toma_id INT UNSIGNED NULL,
   usuario_id INT UNSIGNED NOT NULL,
   nombre_conteo VARCHAR(160) NOT NULL,
   estado ENUM('borrador', 'finalizado') NOT NULL DEFAULT 'borrador',
   fecha_inicio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   fecha_finalizacion DATETIME NULL,
   archivo_excel VARCHAR(255) NULL,
+  CONSTRAINT fk_conteos_toma FOREIGN KEY (toma_id) REFERENCES tomas_fisicas(id),
   CONSTRAINT fk_conteos_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
   INDEX idx_conteos_estado (estado),
-  INDEX idx_conteos_usuario (usuario_id)
+  INDEX idx_conteos_toma (toma_id),
+  INDEX idx_conteos_usuario (usuario_id),
+  UNIQUE KEY uq_conteo_toma_usuario (toma_id, usuario_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS conteo_detalle (

@@ -23,6 +23,8 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
+    require_once __DIR__ . '/schema.php';
+    ensure_schema($pdo);
 } catch (PDOException $exception) {
     http_response_code(500);
     exit('No se pudo conectar a la base de datos. Revise config/database.php.');

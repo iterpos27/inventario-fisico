@@ -185,7 +185,7 @@ async function crearConteo() {
     $('conteoCreado').value = '1';
     state.created = true;
     if (userRole === 'admin') {
-      showMessage('Conteo creado. Los usuarios ya pueden seleccionarlo.');
+      showMessage('Toma creada. Los usuarios ya pueden seleccionarla.');
       setTimeout(() => {
         window.location.href = `${baseUrl}/conteos_borrador.php`;
       }, 900);

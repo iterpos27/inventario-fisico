@@ -18,13 +18,12 @@ if (!is_array($payload) || !verify_csrf($payload['csrf_token'] ?? null)) {
     exit;
 }
 
-$nombre = trim((string) ($payload['nombre_conteo'] ?? ''));
 $items = $payload['items'] ?? [];
 $conteoId = (int) ($payload['conteo_id'] ?? 0);
 
-if ($nombre === '' || !is_array($items) || count($items) === 0) {
+if (!is_array($items) || count($items) === 0) {
     http_response_code(422);
-    echo json_encode(['ok' => false, 'message' => 'Ingrese nombre y productos']);
+    echo json_encode(['ok' => false, 'message' => 'Ingrese productos']);
     exit;
 }
 if ($conteoId <= 0) {
@@ -36,21 +35,17 @@ if ($conteoId <= 0) {
 try {
     $pdo->beginTransaction();
 
-    if ($conteoId > 0) {
-        $stmt = $pdo->prepare(
-            "SELECT c.id
-             FROM conteos c
-             INNER JOIN usuarios u ON u.id = c.usuario_id
-             WHERE c.id = ? AND c.estado = 'borrador' AND (c.usuario_id = ? OR u.rol = 'admin')"
-        );
-        $stmt->execute([$conteoId, (int) $_SESSION['usuario_id']]);
-        if (!$stmt->fetch()) {
-            throw new RuntimeException('Conteo no disponible');
-        }
-        $stmt = $pdo->prepare('UPDATE conteos SET usuario_id = ?, nombre_conteo = ? WHERE id = ?');
-        $stmt->execute([(int) $_SESSION['usuario_id'], $nombre, $conteoId]);
-        $pdo->prepare('DELETE FROM conteo_detalle WHERE conteo_id = ?')->execute([$conteoId]);
+    $stmt = $pdo->prepare(
+        "SELECT c.id
+         FROM conteos c
+         INNER JOIN tomas_fisicas t ON t.id = c.toma_id
+         WHERE c.id = ? AND c.usuario_id = ? AND c.estado = 'borrador' AND t.estado = 'abierta'"
+    );
+    $stmt->execute([$conteoId, (int) $_SESSION['usuario_id']]);
+    if (!$stmt->fetch()) {
+        throw new RuntimeException('Conteo no disponible');
     }
+    $pdo->prepare('DELETE FROM conteo_detalle WHERE conteo_id = ?')->execute([$conteoId]);
 
     $stmtProducto = $pdo->prepare('SELECT codigo, descripcion FROM productos WHERE id = ? AND estado = 1');
     $stmtDetalle = $pdo->prepare(

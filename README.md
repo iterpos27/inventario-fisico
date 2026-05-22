@@ -2,19 +2,22 @@
 
 Aplicacion web en PHP 8, MySQL/MariaDB, Bootstrap 5, PDO y PhpSpreadsheet para realizar conteos fisicos de inventario desde celular o PC.
 
-El sistema permite cargar un catalogo de productos desde Excel, buscar productos por codigo o descripcion, registrar cantidades contadas, guardar borradores, continuar conteos pendientes y finalizar conteos generando un archivo Excel descargable.
+El sistema permite cargar un catalogo de productos desde Excel, crear tomas fisicas, asignarlas a usuarios operativos, registrar cantidades contadas desde celular, guardar borradores, continuar conteos pendientes y finalizar conteos generando archivos Excel individuales y consolidados.
 
 ## Caracteristicas
 
 - Login con sesiones PHP.
-- Panel principal con resumen de productos y conteos.
+- Panel principal con resumen de productos, tomas fisicas y conteos.
 - Importacion de productos desde Excel.
+- Creacion administrativa de tomas fisicas.
+- Conteos individuales por usuario participante.
 - Conteo mobile first con busqueda rapida.
 - Guardado manual de borradores.
 - Autoguardado cada 30 segundos.
 - Finalizacion de conteos con bloqueo de edicion.
 - Generacion de Excel final con codigo, descripcion, cantidad y usuario.
-- Reportes de conteos borrador y finalizados.
+- Reporte consolidado por toma fisica.
+- Reportes de conteos individuales borrador y finalizados.
 - Gestion de usuarios administradores y operativos.
 - Logo configurable.
 
