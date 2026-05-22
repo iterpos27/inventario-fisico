@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 function ensure_column_exists(PDO $pdo, string $table, string $column, string $definition): void
 {
-    $stmt = $pdo->prepare("SHOW COLUMNS FROM {$table} LIKE ?");
-    $stmt->execute([$column]);
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $table) || !preg_match('/^[a-zA-Z0-9_]+$/', $column)) {
+        throw new InvalidArgumentException('Nombre de tabla o columna invalido');
+    }
+
+    $columnLike = $pdo->quote($column);
+    $stmt = $pdo->query("SHOW COLUMNS FROM {$table} LIKE {$columnLike}");
     if ($stmt->fetch()) {
         return;
     }
