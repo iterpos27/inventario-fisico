@@ -85,7 +85,6 @@ $layoutStarted = true;
         <?php else: ?>
             <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-clipboard-check"></i><span>Conteo</span></a>
             <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= BASE_URL ?>/historial_conteos.php"><i class="bi bi-clock-history"></i><span>Historial</span></a>
-            <a href="<?= BASE_URL ?>/logout.php"><i class="bi bi-box-arrow-right"></i><span>Salir</span></a>
         <?php endif; ?>
     </nav>
 
