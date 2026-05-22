@@ -23,7 +23,7 @@ body {
 body {
   background: var(--soft);
   color: #182532;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Roboto, "Open Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   letter-spacing: 0;
   margin: 0;
 }
@@ -250,7 +250,130 @@ body {
 
 .sidebar-nav {
   display: grid;
-  gap: 6px;
+  gap: 8px;
+}
+
+.nav-section {
+  position: relative;
+  border-radius: 7px;
+}
+
+.nav-section::before {
+  content: "";
+  position: absolute;
+  inset: 6px auto 6px 0;
+  width: 3px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.nav-section.is-active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-section.is-active::before {
+  background: #fff;
+}
+
+.nav-section summary {
+  list-style: none;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px 9px 14px;
+  border-radius: 7px;
+  color: #eef5ff;
+  font-weight: 800;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.nav-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.nav-section summary:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.nav-section summary span {
+  flex: 1;
+  min-width: 0;
+}
+
+.nav-section summary > i:first-child {
+  width: 20px;
+  font-size: 1.05rem;
+}
+
+.nav-chevron {
+  width: auto !important;
+  color: #dbe8f7;
+  font-size: 0.78rem !important;
+  transition: transform 0.16s ease;
+}
+
+.nav-section[open] .nav-chevron {
+  transform: rotate(180deg);
+}
+
+.nav-submenu {
+  display: grid;
+  gap: 2px;
+  padding: 2px 8px 8px 38px;
+}
+
+.sidebar-sublink {
+  position: relative;
+  display: block;
+  padding: 7px 9px;
+  border-radius: 5px;
+  color: #dbe8f7;
+  text-decoration: none;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.sidebar-sublink:hover,
+.sidebar-sublink.active {
+  color: var(--sidebar-deep);
+  background: #fff;
+}
+
+.sidebar-sublink.active::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.sidebar-sublink.is-muted {
+  opacity: 0.72;
+}
+
+.icon-panel {
+  color: #8fd3ff;
+}
+
+.icon-count {
+  color: #ffd166;
+}
+
+.icon-reports {
+  color: #95f2c6;
+}
+
+.icon-products {
+  color: #f7a8b8;
+}
+
+.icon-admin {
+  color: #c8b6ff;
 }
 
 .sidebar-link {
@@ -880,7 +1003,12 @@ body {
     padding-bottom: 4px;
   }
 
-  .sidebar-link {
+  .nav-section {
+    min-width: 230px;
+  }
+
+  .sidebar-link,
+  .nav-section summary {
     white-space: nowrap;
   }
 
