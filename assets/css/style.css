@@ -1333,3 +1333,89 @@ body {
     bottom: 0;
   }
 }
+
+@media (max-width: 767.98px) {
+  .table-responsive {
+    overflow: visible;
+  }
+
+  .table {
+    min-width: 0;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+    background: transparent;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table tbody tr {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #fff;
+    box-shadow: 0 8px 18px rgba(23, 71, 125, 0.04);
+  }
+
+  .table td {
+    min-height: 44px;
+    display: grid;
+    grid-template-columns: minmax(92px, 38%) minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #edf3fa;
+    text-align: right;
+  }
+
+  .table td:last-child {
+    border-bottom: 0;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .table td[colspan] {
+    display: block;
+    text-align: center;
+  }
+
+  .table td[colspan]::before {
+    content: "";
+    display: none;
+  }
+
+  .table .count-name,
+  .table td strong,
+  .table td span:not(.badge) {
+    text-align: right;
+  }
+
+  .table-actions,
+  .table td .quick-actions,
+  .table td form {
+    justify-content: flex-end;
+  }
+
+  .table td .btn {
+    width: 100%;
+  }
+
+  .table td .badge {
+    justify-self: end;
+  }
+}
