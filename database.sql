@@ -87,7 +87,7 @@ INSERT INTO usuarios (nombre, usuario, password, rol, estado)
 VALUES (
   'Administrador',
   'admin',
-  '$2y$10$4bG34LfURR5Ua9DRXo.UneDnfgM6fAF/xyKi6jSEqhm2A8psnHPOC',
+  '$2y$10$fqF1pDCz79WKhYMwU8rsneZN.HEboXW0Whd8hxfoKGVQlx/eESn0q',
   'admin',
   1
 )

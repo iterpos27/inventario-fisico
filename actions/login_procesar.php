@@ -15,19 +15,6 @@ $stmt->execute([$usuario]);
 $user = $stmt->fetch();
 
 $validPassword = $user && password_verify($password, $user['password']);
-$initialAdminHash = '$2y$10$4bG34LfURR5Ua9DRXo.UneDnfgM6fAF/xyKi6jSEqhm2A8psnHPOC';
-
-if (
-    !$validPassword
-    && $user
-    && $user['usuario'] === 'admin'
-    && hash_equals($initialAdminHash, $user['password'])
-    && $password === 'admin123'
-) {
-    $validPassword = true;
-    $stmt = $pdo->prepare('UPDATE usuarios SET password = ? WHERE id = ?');
-    $stmt->execute([password_hash($password, PASSWORD_DEFAULT), (int) $user['id']]);
-}
 
 if (!$user || !$validPassword) {
     header('Location: ' . BASE_URL . '/login.php?error=1');

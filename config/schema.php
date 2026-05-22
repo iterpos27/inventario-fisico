@@ -70,4 +70,9 @@ function ensure_schema(PDO $pdo): void
     } catch (Throwable $exception) {
         // La llave foranea ya puede existir o no estar disponible en datos antiguos.
     }
+
+    $oldAdminHash = '$2y$10$4bG34LfURR5Ua9DRXo.UneDnfgM6fAF/xyKi6jSEqhm2A8psnHPOC';
+    $currentAdminHash = '$2y$10$fqF1pDCz79WKhYMwU8rsneZN.HEboXW0Whd8hxfoKGVQlx/eESn0q';
+    $stmt = $pdo->prepare('UPDATE usuarios SET password = ? WHERE usuario = ? AND password = ?');
+    $stmt->execute([$currentAdminHash, 'admin', $oldAdminHash]);
 }
