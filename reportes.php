@@ -4,8 +4,18 @@ require_once __DIR__ . '/includes/auth.php';
 require_login();
 
 $estado = $_GET['estado'] ?? '';
-$fecha = $_GET['fecha'] ?? date('Y-m-d');
-$mes = $_GET['mes'] ?? date('Y-m');
+$fechaDesde = $_GET['fecha_desde'] ?? date('Y-m-01');
+$fechaHasta = $_GET['fecha_hasta'] ?? date('Y-m-d');
+
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaDesde)) {
+    $fechaDesde = date('Y-m-01');
+}
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaHasta)) {
+    $fechaHasta = date('Y-m-d');
+}
+if ($fechaDesde > $fechaHasta) {
+    [$fechaDesde, $fechaHasta] = [$fechaHasta, $fechaDesde];
+}
 
 $params = [];
 $sql = "SELECT c.id, c.nombre_conteo, c.estado, c.fecha_inicio, c.fecha_finalizacion, c.archivo_excel,
@@ -13,7 +23,9 @@ $sql = "SELECT c.id, c.nombre_conteo, c.estado, c.fecha_inicio, c.fecha_finaliza
         FROM conteos c
         INNER JOIN usuarios u ON u.id = c.usuario_id
         LEFT JOIN tomas_fisicas t ON t.id = c.toma_id
-        WHERE 1 = 1";
+        WHERE DATE(c.fecha_inicio) BETWEEN ? AND ?";
+$params[] = $fechaDesde;
+$params[] = $fechaHasta;
 if (in_array($estado, ['borrador', 'finalizado'], true)) {
     $sql .= ' AND c.estado = ?';
     $params[] = $estado;
@@ -43,34 +55,21 @@ if (current_user_role() === 'admin') {
     $tomas = $stmt->fetchAll();
 }
 
-$dailySql = "SELECT c.id, c.nombre_conteo, c.estado, c.fecha_inicio, c.fecha_finalizacion, c.archivo_excel, u.nombre
-             FROM conteos c
-             INNER JOIN usuarios u ON u.id = c.usuario_id
-             WHERE DATE(c.fecha_inicio) = ?";
-$dailyParams = [$fecha];
+$rangeSql = "SELECT DATE(fecha_inicio) AS dia,
+                    COUNT(*) AS conteos,
+                    SUM(CASE WHEN estado = 'finalizado' THEN 1 ELSE 0 END) AS finalizados,
+                    SUM(CASE WHEN estado = 'borrador' THEN 1 ELSE 0 END) AS borradores
+             FROM conteos
+             WHERE DATE(fecha_inicio) BETWEEN ? AND ?";
+$rangeParams = [$fechaDesde, $fechaHasta];
 if (current_user_role() !== 'admin') {
-    $dailySql .= ' AND c.usuario_id = ?';
-    $dailyParams[] = (int) $_SESSION['usuario_id'];
+    $rangeSql .= ' AND usuario_id = ?';
+    $rangeParams[] = (int) $_SESSION['usuario_id'];
 }
-$dailySql .= ' ORDER BY c.id DESC';
-$stmt = $pdo->prepare($dailySql);
-$stmt->execute($dailyParams);
-$conteosDiarios = $stmt->fetchAll();
-
-$monthlySql = "SELECT DATE(fecha_inicio) AS dia,
-                      COUNT(*) AS conteos,
-                      SUM(CASE WHEN estado = 'finalizado' THEN 1 ELSE 0 END) AS finalizados
-               FROM conteos
-               WHERE DATE_FORMAT(fecha_inicio, '%Y-%m') = ?";
-$monthlyParams = [$mes];
-if (current_user_role() !== 'admin') {
-    $monthlySql .= ' AND usuario_id = ?';
-    $monthlyParams[] = (int) $_SESSION['usuario_id'];
-}
-$monthlySql .= ' GROUP BY DATE(fecha_inicio) ORDER BY dia DESC';
-$stmt = $pdo->prepare($monthlySql);
-$stmt->execute($monthlyParams);
-$diasMes = $stmt->fetchAll();
+$rangeSql .= ' GROUP BY DATE(fecha_inicio) ORDER BY dia DESC';
+$stmt = $pdo->prepare($rangeSql);
+$stmt->execute($rangeParams);
+$diasRango = $stmt->fetchAll();
 
 $pageTitle = 'Reportes - ' . APP_NAME;
 require_once __DIR__ . '/includes/header.php';
@@ -84,66 +83,41 @@ require_once __DIR__ . '/includes/navbar.php';
         </div>
     </div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-12 col-lg-6">
-            <section class="content-panel h-100">
-                <div class="section-title"><h2>Reporte diario</h2></div>
-                <form class="search-row mb-3" method="get" action="<?= BASE_URL ?>/reportes.php">
-                    <input type="hidden" name="estado" value="<?= e($estado) ?>">
-                    <input type="hidden" name="mes" value="<?= e($mes) ?>">
-                    <input class="form-control" id="fecha" name="fecha" type="date" value="<?= e($fecha) ?>">
-                    <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Consultar</button>
-                </form>
-                <div class="table-responsive">
-                    <table class="table align-middle compact-table">
-                        <thead><tr><th>Conteo</th><th>Usuario</th><th>Estado</th><th>Inicio</th></tr></thead>
-                        <tbody>
-                            <?php foreach ($conteosDiarios as $conteo): ?>
-                                <tr>
-                                    <td class="count-name"><?= nl2br(e($conteo['nombre_conteo'])) ?></td>
-                                    <td><?= e($conteo['nombre']) ?></td>
-                                    <td><span class="badge text-bg-<?= $conteo['estado'] === 'finalizado' ? 'success' : 'warning' ?>"><?= e($conteo['estado']) ?></span></td>
-                                    <td><?= e($conteo['fecha_inicio']) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                            <?php if (!$conteosDiarios): ?>
-                                <tr><td colspan="4" class="text-center text-secondary py-4">Sin movimientos para la fecha.</td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+    <section class="content-panel mb-4">
+        <div class="section-title"><h2>Reporte por rango de fechas</h2></div>
+        <form class="row g-3 mb-3" method="get" action="<?= BASE_URL ?>/reportes.php">
+            <input type="hidden" name="estado" value="<?= e($estado) ?>">
+            <div class="col-12 col-md-4">
+                <label class="form-label" for="fecha_desde">Desde</label>
+                <input class="form-control" id="fecha_desde" name="fecha_desde" type="date" value="<?= e($fechaDesde) ?>">
+            </div>
+            <div class="col-12 col-md-4">
+                <label class="form-label" for="fecha_hasta">Hasta</label>
+                <input class="form-control" id="fecha_hasta" name="fecha_hasta" type="date" value="<?= e($fechaHasta) ?>">
+            </div>
+            <div class="col-12 col-md-4 d-flex align-items-end">
+                <button class="btn btn-primary btn-lg w-100" type="submit"><i class="bi bi-search"></i> Consultar</button>
+            </div>
+        </form>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead><tr><th>Dia</th><th>Conteos</th><th>Borradores</th><th>Finalizados</th></tr></thead>
+                <tbody>
+                    <?php foreach ($diasRango as $dia): ?>
+                        <tr>
+                            <td><?= e($dia['dia']) ?></td>
+                            <td><?= (int) $dia['conteos'] ?></td>
+                            <td><?= (int) $dia['borradores'] ?></td>
+                            <td><?= (int) $dia['finalizados'] ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (!$diasRango): ?>
+                        <tr><td colspan="4" class="text-center text-secondary py-4">Sin movimientos para el rango seleccionado.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </div>
-
-        <div class="col-12 col-lg-6">
-            <section class="content-panel h-100">
-                <div class="section-title"><h2>Reporte mensual</h2></div>
-                <form class="search-row mb-3" method="get" action="<?= BASE_URL ?>/reportes.php">
-                    <input type="hidden" name="estado" value="<?= e($estado) ?>">
-                    <input type="hidden" name="fecha" value="<?= e($fecha) ?>">
-                    <input class="form-control" id="mes" name="mes" type="month" value="<?= e($mes) ?>">
-                    <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Consultar</button>
-                </form>
-                <div class="table-responsive">
-                    <table class="table align-middle compact-table">
-                        <thead><tr><th>Dia</th><th>Conteos</th><th>Finalizados</th></tr></thead>
-                        <tbody>
-                            <?php foreach ($diasMes as $dia): ?>
-                                <tr>
-                                    <td><?= e($dia['dia']) ?></td>
-                                    <td><?= (int) $dia['conteos'] ?></td>
-                                    <td><?= (int) $dia['finalizados'] ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                            <?php if (!$diasMes): ?>
-                                <tr><td colspan="3" class="text-center text-secondary py-4">Sin movimientos para el mes.</td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </div>
-    </div>
+    </section>
 
     <?php if (current_user_role() === 'admin'): ?>
     <section class="content-panel mb-4">
@@ -179,8 +153,8 @@ require_once __DIR__ . '/includes/navbar.php';
     <?php endif; ?>
 
     <form class="filter-tabs mb-3" method="get" action="<?= BASE_URL ?>/reportes.php">
-        <input type="hidden" name="fecha" value="<?= e($fecha) ?>">
-        <input type="hidden" name="mes" value="<?= e($mes) ?>">
+        <input type="hidden" name="fecha_desde" value="<?= e($fechaDesde) ?>">
+        <input type="hidden" name="fecha_hasta" value="<?= e($fechaHasta) ?>">
         <button class="btn <?= $estado === '' ? 'btn-primary' : 'btn-outline-primary' ?>" name="estado" value="" type="submit">Todos</button>
         <button class="btn <?= $estado === 'borrador' ? 'btn-primary' : 'btn-outline-primary' ?>" name="estado" value="borrador" type="submit">Borradores</button>
         <button class="btn <?= $estado === 'finalizado' ? 'btn-primary' : 'btn-outline-primary' ?>" name="estado" value="finalizado" type="submit">Finalizados</button>
