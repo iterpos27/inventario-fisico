@@ -3,6 +3,11 @@ require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_login();
 
+if (current_user_role() !== 'admin') {
+    header('Location: ' . BASE_URL . '/conteo.php');
+    exit;
+}
+
 $estado = $_GET['estado'] ?? '';
 $fechaDesde = $_GET['fecha_desde'] ?? date('Y-m-01');
 $fechaHasta = $_GET['fecha_hasta'] ?? date('Y-m-d');

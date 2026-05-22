@@ -27,5 +27,5 @@ $_SESSION['nombre'] = $user['nombre'];
 $_SESSION['usuario'] = $user['usuario'];
 $_SESSION['rol'] = $user['rol'];
 
-header('Location: ' . BASE_URL . '/dashboard.php');
+header('Location: ' . BASE_URL . ($user['rol'] === 'admin' ? '/dashboard.php' : '/conteo.php'));
 exit;

@@ -3,6 +3,11 @@ require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_login();
 
+if (current_user_role() !== 'admin') {
+    header('Location: ' . BASE_URL . '/conteo.php');
+    exit;
+}
+
 $totalProductos = (int) $pdo->query('SELECT COUNT(*) FROM productos WHERE estado = 1')->fetchColumn();
 $tomasAbiertas = (int) $pdo->query("SELECT COUNT(*) FROM tomas_fisicas WHERE estado = 'abierta'")->fetchColumn();
 $tomasFinalizadas = (int) $pdo->query("SELECT COUNT(*) FROM tomas_fisicas WHERE estado = 'finalizada'")->fetchColumn();

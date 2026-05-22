@@ -45,7 +45,9 @@ $layoutStarted = true;
         </a>
 
         <nav class="sidebar-nav" aria-label="Menu principal">
+            <?php if (current_user_role() === 'admin'): ?>
             <a class="sidebar-link<?= nav_active('dashboard.php', $currentPage) ?>" href="<?= BASE_URL ?>/dashboard.php"><i class="bi bi-speedometer2 icon-panel"></i><span>Dashboard</span></a>
+            <?php endif; ?>
 
             <details class="nav-section nav-count<?= nav_section_class(['conteo.php', 'toma_detalle.php', 'historial_conteos.php'], $currentPage) ?>"<?= nav_section_open(['conteo.php', 'toma_detalle.php', 'historial_conteos.php'], $currentPage) ?>>
                 <summary><i class="bi bi-clipboard-check icon-count"></i><span>Conteo y Borradores</span><i class="bi bi-chevron-down nav-chevron"></i></summary>
@@ -55,9 +57,9 @@ $layoutStarted = true;
                 </div>
             </details>
 
+            <?php if (current_user_role() === 'admin'): ?>
             <a class="sidebar-link<?= nav_active('reportes.php', $currentPage) ?>" href="<?= BASE_URL ?>/reportes.php"><i class="bi bi-file-earmark-spreadsheet icon-reports"></i><span>Reportes</span></a>
 
-            <?php if (current_user_role() === 'admin'): ?>
             <a class="sidebar-link<?= nav_active('productos.php', $currentPage) ?>" href="<?= BASE_URL ?>/productos.php"><i class="bi bi-box-seam icon-products"></i><span>Productos</span></a>
 
             <details class="nav-section nav-admin<?= nav_section_class(['usuarios.php', 'agencias.php', 'configuracion.php'], $currentPage) ?>"<?= nav_section_open(['usuarios.php', 'agencias.php', 'configuracion.php'], $currentPage) ?>>
@@ -72,6 +74,20 @@ $layoutStarted = true;
         </nav>
 
     </aside>
+
+    <nav class="mobile-bottom-nav" aria-label="Menu movil">
+        <?php if (current_user_role() === 'admin'): ?>
+            <a class="<?= nav_active('dashboard.php', $currentPage) ?>" href="<?= BASE_URL ?>/dashboard.php"><i class="bi bi-speedometer2"></i><span>Panel</span></a>
+            <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-clipboard-check"></i><span>Conteo</span></a>
+            <a class="<?= nav_active('reportes.php', $currentPage) ?>" href="<?= BASE_URL ?>/reportes.php"><i class="bi bi-file-earmark-spreadsheet"></i><span>Reportes</span></a>
+            <a class="<?= nav_active('productos.php', $currentPage) ?>" href="<?= BASE_URL ?>/productos.php"><i class="bi bi-box-seam"></i><span>Productos</span></a>
+            <a class="<?= nav_active('usuarios.php', $currentPage) . nav_active('agencias.php', $currentPage) . nav_active('configuracion.php', $currentPage) ?>" href="<?= BASE_URL ?>/usuarios.php"><i class="bi bi-gear"></i><span>Admin</span></a>
+        <?php else: ?>
+            <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-clipboard-check"></i><span>Conteo</span></a>
+            <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= BASE_URL ?>/historial_conteos.php"><i class="bi bi-clock-history"></i><span>Historial</span></a>
+            <a href="<?= BASE_URL ?>/logout.php"><i class="bi bi-box-arrow-right"></i><span>Salir</span></a>
+        <?php endif; ?>
+    </nav>
 
     <div class="app-main">
         <header class="app-topbar">

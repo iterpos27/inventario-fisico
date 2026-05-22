@@ -61,6 +61,13 @@ require_once __DIR__ . '/includes/header.php';
 require_once __DIR__ . '/includes/navbar.php';
 ?>
 <main class="container py-4">
+    <?php if (!empty($_GET['msg']) && $_GET['msg'] === 'edicion'): ?>
+        <div class="alert alert-success">Conteo habilitado nuevamente para edicion.</div>
+    <?php endif; ?>
+    <?php if (!empty($_GET['error']) && $_GET['error'] === 'edicion'): ?>
+        <div class="alert alert-danger">No se pudo habilitar el conteo.</div>
+    <?php endif; ?>
+
     <div class="page-heading">
         <div>
             <p class="eyebrow">Toma fisica</p>
@@ -148,7 +155,7 @@ require_once __DIR__ . '/includes/navbar.php';
                         <th>Unidades</th>
                         <th>Inicio</th>
                         <th>Fin</th>
-                        <th>Excel</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -167,6 +174,12 @@ require_once __DIR__ . '/includes/navbar.php';
                             <td>
                                 <?php if ($participante['conteo_estado'] === 'finalizado' && $participante['archivo_excel']): ?>
                                     <a class="btn btn-sm btn-success" href="<?= BASE_URL ?>/actions/descargar_excel.php?id=<?= (int) $participante['conteo_id'] ?>"><i class="bi bi-download"></i> Descargar</a>
+                                    <form class="mt-2" method="post" action="<?= BASE_URL ?>/actions/habilitar_conteo_usuario.php" onsubmit="return confirm('Habilitar nuevamente este conteo para edicion?');">
+                                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                        <input type="hidden" name="toma_id" value="<?= (int) $toma['id'] ?>">
+                                        <input type="hidden" name="usuario_id" value="<?= (int) $participante['usuario_id'] ?>">
+                                        <button class="btn btn-sm btn-outline-primary" type="submit"><i class="bi bi-unlock"></i> Habilitar</button>
+                                    </form>
                                 <?php else: ?>
                                     <span class="text-secondary">Pendiente</span>
                                 <?php endif; ?>

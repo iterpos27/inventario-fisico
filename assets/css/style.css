@@ -385,6 +385,10 @@ body {
   background: #fff;
 }
 
+.mobile-bottom-nav {
+  display: none;
+}
+
 .app-main {
   min-width: 0;
   background: var(--soft);
@@ -1160,28 +1164,56 @@ body {
 }
 
 @media (max-width: 991.98px) {
+  body {
+    padding-bottom: 72px;
+  }
+
   .app-sidebar {
-    gap: 12px;
+    display: none;
   }
 
-  .sidebar-brand {
-    align-items: center;
+  .app-main {
+    min-height: calc(100vh - 72px);
   }
 
-  .sidebar-nav {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 4px;
+  .mobile-bottom-nav {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: 8px;
+    z-index: 80;
+    min-height: 58px;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 12px 30px rgba(11, 39, 68, 0.18);
   }
 
-  .nav-section {
-    min-width: 230px;
+  .mobile-bottom-nav a {
+    display: grid;
+    place-items: center;
+    gap: 2px;
+    min-width: 0;
+    padding: 5px 3px;
+    border-radius: 6px;
+    color: var(--primary-dark);
+    text-decoration: none;
+    font-size: 0.68rem;
+    font-weight: 800;
   }
 
-  .sidebar-link,
-  .nav-section summary {
-    white-space: nowrap;
+  .mobile-bottom-nav a i {
+    font-size: 1.05rem;
+  }
+
+  .mobile-bottom-nav a.active {
+    color: #fff;
+    background: var(--primary);
   }
 
   .topbar-user-menu summary span {
@@ -1190,5 +1222,15 @@ body {
 
   .app-topbar {
     min-height: 68px;
+    padding: 12px 14px;
+  }
+
+  .app-topbar h1 {
+    font-size: 1.05rem;
+  }
+
+  .mobile-actions {
+    bottom: 74px;
+    border-bottom: 1px solid var(--line);
   }
 }
