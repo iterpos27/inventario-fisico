@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/conteo_items.php';
 require_login();
 
 header('Content-Type: application/json; charset=utf-8');
@@ -45,26 +46,8 @@ try {
     if (!$stmt->fetch()) {
         throw new RuntimeException('Conteo no disponible');
     }
-    $pdo->prepare('DELETE FROM conteo_detalle WHERE conteo_id = ?')->execute([$conteoId]);
-
-    $stmtProducto = $pdo->prepare('SELECT codigo, descripcion FROM productos WHERE id = ? AND estado = 1');
-    $stmtDetalle = $pdo->prepare(
-        'INSERT INTO conteo_detalle (conteo_id, producto_id, codigo, descripcion, cantidad)
-         VALUES (?, ?, ?, ?, ?)'
-    );
-
-    foreach ($items as $item) {
-        $productoId = (int) ($item['producto_id'] ?? 0);
-        $cantidad = (float) ($item['cantidad'] ?? 0);
-        if ($productoId <= 0 || $cantidad < 0) {
-            continue;
-        }
-        $stmtProducto->execute([$productoId]);
-        $producto = $stmtProducto->fetch();
-        if (!$producto) {
-            continue;
-        }
-        $stmtDetalle->execute([$conteoId, $productoId, $producto['codigo'], $producto['descripcion'], $cantidad]);
+    if (reemplazar_detalle_conteo($pdo, $conteoId, $items) === 0) {
+        throw new RuntimeException('Sin productos validos');
     }
 
     $pdo->commit();
