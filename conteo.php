@@ -109,11 +109,11 @@ require_once __DIR__ . '/includes/navbar.php';
     <section id="crearConteoPanel" class="content-panel mb-3">
         <div class="section-title"><h2>Crear toma fisica</h2></div>
         <div class="row g-3">
-            <div class="col-md-4">
+            <div class="col-12 col-md-6 col-xl-3">
                 <label class="form-label" for="numeroToma">Toma fisica #</label>
                 <input class="form-control form-control-lg" id="numeroToma" value="<?= e($defaultToma) ?>" placeholder="Automatico" readonly>
             </div>
-            <div class="col-md-4">
+            <div class="col-12 col-md-6 col-xl-3">
                 <label class="form-label" for="agenciaConteo">Agencia</label>
                 <select class="form-select form-control-lg" id="agenciaConteo">
                     <option value="">Sin agencia</option>
@@ -122,11 +122,11 @@ require_once __DIR__ . '/includes/navbar.php';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-12 col-md-6 col-xl-3">
                 <label class="form-label" for="fechaHoraHabilitacion">Habilitacion</label>
                 <input class="form-control form-control-lg" id="fechaHoraHabilitacion" type="datetime-local" value="<?= e(date('Y-m-d\T08:00')) ?>">
             </div>
-            <div class="col-md-4">
+            <div class="col-12 col-md-6 col-xl-3">
                 <label class="form-label" for="fechaHoraCierre">Finalizacion</label>
                 <input class="form-control form-control-lg" id="fechaHoraCierre" type="datetime-local" value="<?= e(date('Y-m-d\T18:00')) ?>">
             </div>
