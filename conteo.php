@@ -123,20 +123,12 @@ require_once __DIR__ . '/includes/navbar.php';
                 </select>
             </div>
             <div class="col-md-4">
-                <label class="form-label" for="fechaHabilitacion">Fecha habilitacion</label>
-                <input class="form-control form-control-lg" id="fechaHabilitacion" type="date" value="<?= e(date('Y-m-d')) ?>">
+                <label class="form-label" for="fechaHoraHabilitacion">Habilitacion</label>
+                <input class="form-control form-control-lg" id="fechaHoraHabilitacion" type="datetime-local" value="<?= e(date('Y-m-d\T08:00')) ?>">
             </div>
             <div class="col-md-4">
-                <label class="form-label" for="fechaCierre">Fecha finalizacion</label>
-                <input class="form-control form-control-lg" id="fechaCierre" type="date" value="<?= e(date('Y-m-d')) ?>">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" for="horaInicio">Hora inicio</label>
-                <input class="form-control form-control-lg" id="horaInicio" type="time" value="08:00">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" for="horaFin">Hora fin</label>
-                <input class="form-control form-control-lg" id="horaFin" type="time" value="18:00">
+                <label class="form-label" for="fechaHoraCierre">Finalizacion</label>
+                <input class="form-control form-control-lg" id="fechaHoraCierre" type="datetime-local" value="<?= e(date('Y-m-d\T18:00')) ?>">
             </div>
         </div>
         <div class="count-preview mt-3" id="vistaNombreConteo"></div>

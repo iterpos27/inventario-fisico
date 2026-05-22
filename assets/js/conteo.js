@@ -159,13 +159,13 @@ async function finalizarConteo() {
 
 async function crearConteo() {
   const agencia = $('agenciaConteo').value.trim().toUpperCase();
-  const fechaHabilitacion = $('fechaHabilitacion').value;
-  const fechaCierre = $('fechaCierre').value;
-  const horaInicio = $('horaInicio').value;
-  const horaFin = $('horaFin').value;
+  const fechaHoraHabilitacion = $('fechaHoraHabilitacion').value;
+  const fechaHoraCierre = $('fechaHoraCierre').value;
+  const [fechaHabilitacion, horaInicio] = fechaHoraHabilitacion.split('T');
+  const [fechaCierre, horaFin] = fechaHoraCierre.split('T');
   const nombre = buildNombreConteo();
   const usuarios = getUsuariosSeleccionados();
-  if (!fechaHabilitacion || !fechaCierre || !horaInicio || !horaFin) {
+  if (!fechaHoraHabilitacion || !fechaHoraCierre || !fechaHabilitacion || !fechaCierre || !horaInicio || !horaFin) {
     showMessage('Complete fechas y horas de la toma', 'warning');
     return;
   }
@@ -235,10 +235,10 @@ function formatDateLabel(value) {
 function buildNombreConteo() {
   const numeroToma = $('numeroToma')?.value.trim().toUpperCase() || '';
   const agencia = $('agenciaConteo')?.value.trim().toUpperCase() || '';
-  const fechaHabilitacion = formatDateLabel($('fechaHabilitacion')?.value || '');
-  const fechaCierre = formatDateLabel($('fechaCierre')?.value || '');
-  const horaInicio = $('horaInicio')?.value || '';
-  const horaFin = $('horaFin')?.value || '';
+  const [fechaHabilitacionRaw = '', horaInicio = ''] = ($('fechaHoraHabilitacion')?.value || '').split('T');
+  const [fechaCierreRaw = '', horaFin = ''] = ($('fechaHoraCierre')?.value || '').split('T');
+  const fechaHabilitacion = formatDateLabel(fechaHabilitacionRaw);
+  const fechaCierre = formatDateLabel(fechaCierreRaw);
   const nombre = `TOMA FISICA # ${numeroToma}\nAGENCIA: ${agencia}\nHABILITACION: ${fechaHabilitacion} ${horaInicio}\nFINALIZACION: ${fechaCierre} ${horaFin}`;
   if ($('nombreConteo')) $('nombreConteo').value = nombre;
   return nombre;
@@ -282,7 +282,7 @@ $('numeroToma')?.addEventListener('keydown', (event) => {
 $('agenciaConteo')?.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !state.created) crearConteo();
 });
-for (const id of ['numeroToma', 'agenciaConteo', 'fechaHabilitacion', 'fechaCierre', 'horaInicio', 'horaFin']) {
+for (const id of ['numeroToma', 'agenciaConteo', 'fechaHoraHabilitacion', 'fechaHoraCierre']) {
   $(id)?.addEventListener('input', renderNombrePreview);
 }
 $('guardarBorrador')?.addEventListener('click', () => guardarBorrador(false));
