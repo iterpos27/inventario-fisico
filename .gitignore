@@ -1,5 +1,7 @@
 composer.phar
-uploads/productos/*
-uploads/conteos/*
-!uploads/productos/.gitkeep
-!uploads/conteos/.gitkeep
+/vendor/
+/public/uploads/productos/*
+/public/uploads/conteos/*
+!/public/uploads/productos/.gitkeep
+!/public/uploads/conteos/.gitkeep
+/docs/analysis_results.md

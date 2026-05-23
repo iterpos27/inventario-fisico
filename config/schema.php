@@ -172,3 +172,4 @@ function ensure_schema(PDO $pdo): void
     $stmt = $pdo->prepare('UPDATE usuarios SET password = ? WHERE usuario = ? AND password = ?');
     $stmt->execute([$currentAdminHash, 'admin', $oldAdminHash]);
 }
+

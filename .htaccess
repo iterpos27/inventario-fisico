@@ -1,0 +1,5 @@
+RewriteEngine On
+RewriteRule ^$ public/ [L]
+RewriteRule ^(assets|uploads)/(.*)$ public/$1/$2 [L]
+RewriteRule ^actions/(.*)$ public/actions/$1 [L]
+RewriteRule ^(.+\.php)$ public/$1 [L]

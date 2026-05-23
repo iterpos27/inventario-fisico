@@ -2,12 +2,7 @@
 
 declare(strict_types=1);
 
-date_default_timezone_set('America/Guayaquil');
-
-define('APP_NAME', 'CENTRO DEL RULIMÁN');
-define('APP_VERSION', '1.0.0');
-define('BASE_URL', '/centro_ruliman_inventario');
-define('UPLOADS_PATH', dirname(__DIR__) . DIRECTORY_SEPARATOR . 'uploads');
+require_once __DIR__ . '/app.php';
 
 $dbHost = 'localhost';
 $dbName = 'centro_ruliman_inventario';
@@ -29,3 +24,5 @@ try {
     http_response_code(500);
     exit('No se pudo conectar a la base de datos. Revise config/database.php.');
 }
+
+
