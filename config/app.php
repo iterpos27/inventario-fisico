@@ -43,7 +43,7 @@ function env_value(string $key, ?string $default = null): ?string
 }
 
 define('APP_NAME', 'CENTRO DEL RULIMAN');
-define('APP_VERSION', '1.0.0');
+define('APP_VERSION', '1.1.0');
 define('BASE_URL', rtrim((string) env_value('APP_BASE_URL', '/centro_ruliman_inventario'), '/'));
 
 function app_url(array $params = []): string

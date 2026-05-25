@@ -101,17 +101,29 @@ class _ConteoScreenState extends State<ConteoScreen> {
     }
 
     final existingIndex = _items.indexWhere((item) => item.productoId == producto.id);
+    var message = 'Producto agregado al inicio';
     setState(() {
       if (existingIndex >= 0) {
-        _items[existingIndex].cantidad = cantidad;
+        final item = _items.removeAt(existingIndex);
+        item.cantidad += cantidad;
+        _items.insert(0, item);
+        message = 'Este codigo ya se conto. Cantidad actualizada a ${_formatQuantity(item.cantidad)}';
       } else {
-        _items.add(ConteoItem.fromProducto(producto, cantidad));
+        _items.insert(0, ConteoItem.fromProducto(producto, cantidad));
       }
       _buscar.clear();
       _cantidad.text = '1';
       _resultados = [];
     });
     await _store.save(widget.conteoId, _items);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  String _formatQuantity(double value) {
+    return value.truncateToDouble() == value ? value.toStringAsFixed(0) : value.toStringAsFixed(2);
   }
 
   Future<void> _guardar() async {
@@ -286,7 +298,8 @@ class _ConteoScreenState extends State<ConteoScreen> {
                         trailing: SizedBox(
                           width: 96,
                           child: TextFormField(
-                            initialValue: item.cantidad.toStringAsFixed(item.cantidad.truncateToDouble() == item.cantidad ? 0 : 2),
+                            key: ValueKey('${item.productoId}-${item.cantidad}'),
+                            initialValue: _formatQuantity(item.cantidad),
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             textAlign: TextAlign.end,
                             decoration: const InputDecoration(isDense: true),

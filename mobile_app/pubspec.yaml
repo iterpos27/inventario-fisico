@@ -1,7 +1,7 @@
 name: centro_ruliman_conteo
 description: App movil de conteo para Centro del Ruliman.
 publish_to: "none"
-version: 0.1.0+1
+version: 0.1.1+2
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
