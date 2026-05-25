@@ -36,7 +36,7 @@ $layoutStarted = true;
 ?>
 <div class="app-layout">
     <aside class="app-sidebar">
-        <a class="sidebar-brand" href="<?= BASE_URL ?>/dashboard.php">
+        <a class="sidebar-brand" href="<?= page_url('dashboard') ?>">
             <img src="<?= $navLogoPath ?>" alt="Logo" class="sidebar-logo" width="54" height="54" onerror="this.style.display='none'">
             <span>
                 <strong><?= APP_NAME ?></strong>
@@ -46,28 +46,28 @@ $layoutStarted = true;
 
         <nav class="sidebar-nav" aria-label="Menu principal">
             <?php if (current_user_role() === 'admin'): ?>
-            <a class="sidebar-link<?= nav_active('dashboard.php', $currentPage) ?>" href="<?= BASE_URL ?>/dashboard.php"><i class="bi bi-speedometer2 icon-panel"></i><span>Dashboard</span></a>
+            <a class="sidebar-link<?= nav_active('dashboard.php', $currentPage) ?>" href="<?= page_url('dashboard') ?>"><i class="bi bi-speedometer2 icon-panel"></i><span>Dashboard</span></a>
             <?php endif; ?>
 
             <details class="nav-section nav-count<?= nav_section_class(['conteo.php', 'toma_detalle.php', 'historial_conteos.php'], $currentPage) ?>"<?= nav_section_open(['conteo.php', 'toma_detalle.php', 'historial_conteos.php'], $currentPage) ?>>
                 <summary><i class="bi bi-clipboard-check icon-count"></i><span>Conteo y Borradores</span><i class="bi bi-chevron-down nav-chevron"></i></summary>
                 <div class="nav-submenu">
-                    <a class="sidebar-sublink<?= nav_active('conteo.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteo.php"><?= current_user_role() === 'admin' ? 'Nuevo conteo' : 'Conteos disponibles' ?></a>
-                    <a class="sidebar-sublink<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= BASE_URL ?>/historial_conteos.php">Historial de conteos</a>
+                    <a class="sidebar-sublink<?= nav_active('conteo.php', $currentPage) ?>" href="<?= page_url('conteo') ?>"><?= current_user_role() === 'admin' ? 'Nuevo conteo' : 'Conteos disponibles' ?></a>
+                    <a class="sidebar-sublink<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= page_url('historial_conteos') ?>">Historial de conteos</a>
                 </div>
             </details>
 
             <?php if (current_user_role() === 'admin'): ?>
-            <a class="sidebar-link<?= nav_active('reportes.php', $currentPage) ?>" href="<?= BASE_URL ?>/reportes.php"><i class="bi bi-file-earmark-spreadsheet icon-reports"></i><span>Reportes</span></a>
+            <a class="sidebar-link<?= nav_active('reportes.php', $currentPage) ?>" href="<?= page_url('reportes') ?>"><i class="bi bi-file-earmark-spreadsheet icon-reports"></i><span>Reportes</span></a>
 
-            <a class="sidebar-link<?= nav_active('productos.php', $currentPage) ?>" href="<?= BASE_URL ?>/productos.php"><i class="bi bi-box-seam icon-products"></i><span>Productos</span></a>
+            <a class="sidebar-link<?= nav_active('productos.php', $currentPage) ?>" href="<?= page_url('productos') ?>"><i class="bi bi-box-seam icon-products"></i><span>Productos</span></a>
 
             <details class="nav-section nav-admin<?= nav_section_class(['usuarios.php', 'agencias.php', 'configuracion.php'], $currentPage) ?>"<?= nav_section_open(['usuarios.php', 'agencias.php', 'configuracion.php'], $currentPage) ?>>
                 <summary><i class="bi bi-gear icon-admin"></i><span>Administracion</span><i class="bi bi-chevron-down nav-chevron"></i></summary>
                 <div class="nav-submenu">
-                    <a class="sidebar-sublink<?= nav_active('usuarios.php', $currentPage) ?>" href="<?= BASE_URL ?>/usuarios.php">Usuarios</a>
-                    <a class="sidebar-sublink<?= nav_active('agencias.php', $currentPage) ?>" href="<?= BASE_URL ?>/agencias.php">Agencias</a>
-                    <a class="sidebar-sublink<?= nav_active('configuracion.php', $currentPage) ?>" href="<?= BASE_URL ?>/configuracion.php">Configuracion del sistema</a>
+                    <a class="sidebar-sublink<?= nav_active('usuarios.php', $currentPage) ?>" href="<?= page_url('usuarios') ?>">Usuarios</a>
+                    <a class="sidebar-sublink<?= nav_active('agencias.php', $currentPage) ?>" href="<?= page_url('agencias') ?>">Agencias</a>
+                    <a class="sidebar-sublink<?= nav_active('configuracion.php', $currentPage) ?>" href="<?= page_url('configuracion') ?>">Configuracion del sistema</a>
                 </div>
             </details>
             <?php endif; ?>
@@ -82,27 +82,27 @@ $layoutStarted = true;
             <button type="button" data-mobile-menu-close aria-label="Cerrar menu"><i class="bi bi-list"></i></button>
         </div>
         <?php if (current_user_role() === 'admin'): ?>
-            <a class="<?= nav_active('dashboard.php', $currentPage) ?>" href="<?= BASE_URL ?>/dashboard.php"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
+            <a class="<?= nav_active('dashboard.php', $currentPage) ?>" href="<?= page_url('dashboard') ?>"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
             <details class="mobile-nav-section"<?= nav_section_open(['conteo.php', 'toma_detalle.php', 'historial_conteos.php'], $currentPage) ?>>
                 <summary><i class="bi bi-clipboard-check"></i><span>Conteo y Borradores</span><i class="bi bi-chevron-down"></i></summary>
-                <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-plus-circle"></i><span>Nuevo conteo</span></a>
-                <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= BASE_URL ?>/historial_conteos.php?estado=borrador"><i class="bi bi-save"></i><span>Borradores</span></a>
-                <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= BASE_URL ?>/historial_conteos.php"><i class="bi bi-clock-history"></i><span>Historial</span></a>
+                <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= page_url('conteo') ?>"><i class="bi bi-plus-circle"></i><span>Nuevo conteo</span></a>
+                <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= page_url('historial_conteos') ?>?estado=borrador"><i class="bi bi-save"></i><span>Borradores</span></a>
+                <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= page_url('historial_conteos') ?>"><i class="bi bi-clock-history"></i><span>Historial</span></a>
             </details>
-            <a class="<?= nav_active('reportes.php', $currentPage) ?>" href="<?= BASE_URL ?>/reportes.php"><i class="bi bi-file-earmark-spreadsheet"></i><span>Reportes</span></a>
-            <a class="<?= nav_active('productos.php', $currentPage) ?>" href="<?= BASE_URL ?>/productos.php"><i class="bi bi-box-seam"></i><span>Productos</span></a>
+            <a class="<?= nav_active('reportes.php', $currentPage) ?>" href="<?= page_url('reportes') ?>"><i class="bi bi-file-earmark-spreadsheet"></i><span>Reportes</span></a>
+            <a class="<?= nav_active('productos.php', $currentPage) ?>" href="<?= page_url('productos') ?>"><i class="bi bi-box-seam"></i><span>Productos</span></a>
             <details class="mobile-nav-section"<?= nav_section_open(['usuarios.php', 'agencias.php', 'configuracion.php'], $currentPage) ?>>
                 <summary><i class="bi bi-gear"></i><span>Administracion</span><i class="bi bi-chevron-down"></i></summary>
-                <a class="<?= nav_active('usuarios.php', $currentPage) ?>" href="<?= BASE_URL ?>/usuarios.php"><i class="bi bi-people"></i><span>Usuarios</span></a>
-                <a class="<?= nav_active('agencias.php', $currentPage) ?>" href="<?= BASE_URL ?>/agencias.php"><i class="bi bi-building"></i><span>Agencias</span></a>
-                <a class="<?= nav_active('configuracion.php', $currentPage) ?>" href="<?= BASE_URL ?>/configuracion.php"><i class="bi bi-sliders"></i><span>Configuracion</span></a>
+                <a class="<?= nav_active('usuarios.php', $currentPage) ?>" href="<?= page_url('usuarios') ?>"><i class="bi bi-people"></i><span>Usuarios</span></a>
+                <a class="<?= nav_active('agencias.php', $currentPage) ?>" href="<?= page_url('agencias') ?>"><i class="bi bi-building"></i><span>Agencias</span></a>
+                <a class="<?= nav_active('configuracion.php', $currentPage) ?>" href="<?= page_url('configuracion') ?>"><i class="bi bi-sliders"></i><span>Configuracion</span></a>
             </details>
-            <a href="<?= BASE_URL ?>/logout.php" class="mobile-logout-link"><i class="bi bi-box-arrow-right"></i><span>Cerrar sesion</span></a>
+            <a href="<?= page_url('logout') ?>" class="mobile-logout-link"><i class="bi bi-box-arrow-right"></i><span>Cerrar sesion</span></a>
         <?php else: ?>
-            <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-clipboard-check"></i><span>Conteo inventario</span></a>
-            <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= BASE_URL ?>/historial_conteos.php?estado=borrador"><i class="bi bi-save"></i><span>Borradores</span></a>
-            <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= BASE_URL ?>/historial_conteos.php"><i class="bi bi-clock-history"></i><span>Historial</span></a>
-            <a href="<?= BASE_URL ?>/logout.php" class="mobile-logout-link"><i class="bi bi-box-arrow-right"></i><span>Cerrar sesion</span></a>
+            <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= page_url('conteo') ?>"><i class="bi bi-clipboard-check"></i><span>Conteo inventario</span></a>
+            <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= page_url('historial_conteos') ?>?estado=borrador"><i class="bi bi-save"></i><span>Borradores</span></a>
+            <a class="<?= nav_active('historial_conteos.php', $currentPage) ?>" href="<?= page_url('historial_conteos') ?>"><i class="bi bi-clock-history"></i><span>Historial</span></a>
+            <a href="<?= page_url('logout') ?>" class="mobile-logout-link"><i class="bi bi-box-arrow-right"></i><span>Cerrar sesion</span></a>
         <?php endif; ?>
     </nav>
 
@@ -126,7 +126,7 @@ $layoutStarted = true;
                         <i class="bi bi-chevron-down"></i>
                     </summary>
                     <div class="topbar-user-dropdown">
-                        <a href="<?= BASE_URL ?>/logout.php"><i class="bi bi-box-arrow-right"></i> Salir</a>
+                        <a href="<?= page_url('logout') ?>"><i class="bi bi-box-arrow-right"></i> Salir</a>
                     </div>
                 </details>
             </div>
@@ -152,5 +152,6 @@ $layoutStarted = true;
             });
         })();
         </script>
+
 
 

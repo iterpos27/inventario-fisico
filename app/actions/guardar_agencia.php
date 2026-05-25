@@ -4,13 +4,13 @@ require_once APP_INCLUDES_PATH . '/auth.php';
 require_admin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?? null)) {
-    header('Location: ' . BASE_URL . '/agencias.php?error=Solicitud invalida');
+    header('Location: ' . page_url('agencias', ['error' => 'Solicitud invalida']));
     exit;
 }
 
 $nombre = strtoupper(trim((string) ($_POST['nombre'] ?? '')));
 if ($nombre === '') {
-    header('Location: ' . BASE_URL . '/agencias.php?error=Ingrese el nombre de la agencia');
+    header('Location: ' . page_url('agencias', ['error' => 'Ingrese el nombre de la agencia']));
     exit;
 }
 
@@ -21,9 +21,10 @@ try {
          ON DUPLICATE KEY UPDATE estado = 1'
     );
     $stmt->execute([$nombre]);
-    header('Location: ' . BASE_URL . '/agencias.php?msg=Agencia guardada correctamente');
+    header('Location: ' . page_url('agencias', ['msg' => 'Agencia guardada correctamente']));
 } catch (Throwable $exception) {
-    header('Location: ' . BASE_URL . '/agencias.php?error=No se pudo guardar la agencia');
+    header('Location: ' . page_url('agencias', ['error' => 'No se pudo guardar la agencia']));
 }
 exit;
+
 

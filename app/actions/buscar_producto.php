@@ -22,3 +22,4 @@ $stmt->execute(["%{$q}%", "%{$q}%", $q, "{$q}%"]);
 
 echo json_encode($stmt->fetchAll(), JSON_UNESCAPED_UNICODE);
 
+

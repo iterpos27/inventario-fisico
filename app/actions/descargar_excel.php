@@ -19,9 +19,16 @@ if (!$conteo || empty($conteo['archivo_excel'])) {
     exit('Archivo no encontrado');
 }
 
-$base = realpath(UPLOADS_PATH . '/conteos');
-$file = realpath(PUBLIC_PATH . '/' . $conteo['archivo_excel']);
-if (!$base || !$file || !str_starts_with($file, $base) || !is_file($file)) {
+$storageBase = realpath(STORAGE_PATH . '/conteos');
+$legacyBase = realpath(UPLOADS_PATH . '/conteos');
+$file = realpath(ROOT_PATH . '/' . $conteo['archivo_excel']);
+if (!$file && str_starts_with((string) $conteo['archivo_excel'], 'uploads/')) {
+    $file = realpath(PUBLIC_PATH . '/' . $conteo['archivo_excel']);
+}
+$allowedFile = $file
+    && (($storageBase && str_starts_with($file, $storageBase)) || ($legacyBase && str_starts_with($file, $legacyBase)))
+    && is_file($file);
+if (!$allowedFile) {
     http_response_code(404);
     exit('Archivo no encontrado');
 }
@@ -31,4 +38,5 @@ header('Content-Disposition: attachment; filename="' . basename($file) . '"');
 header('Content-Length: ' . filesize($file));
 readfile($file);
 exit;
+
 

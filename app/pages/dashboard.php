@@ -4,7 +4,7 @@ require_once APP_INCLUDES_PATH . '/auth.php';
 require_login();
 
 if (current_user_role() !== 'admin') {
-    header('Location: ' . BASE_URL . '/conteo.php');
+    header('Location: ' . page_url('conteo'));
     exit;
 }
 
@@ -131,11 +131,11 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     </div>
 
     <div class="quick-actions">
-        <a class="btn btn-primary btn-lg" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-plus-circle"></i> <?= current_user_role() === 'admin' ? 'Crear toma' : 'Seleccionar conteo' ?></a>
+        <a class="btn btn-primary btn-lg" href="<?= page_url('conteo') ?>"><i class="bi bi-plus-circle"></i> <?= current_user_role() === 'admin' ? 'Crear toma' : 'Seleccionar conteo' ?></a>
         <?php if (current_user_role() === 'admin'): ?>
-            <a class="btn btn-outline-primary btn-lg" href="<?= BASE_URL ?>/productos.php"><i class="bi bi-box-seam"></i> Productos</a>
+            <a class="btn btn-outline-primary btn-lg" href="<?= page_url('productos') ?>"><i class="bi bi-box-seam"></i> Productos</a>
         <?php endif; ?>
-        <a class="btn btn-outline-secondary btn-lg" href="<?= BASE_URL ?>/reportes.php"><i class="bi bi-file-earmark-excel"></i> Reportes</a>
+        <a class="btn btn-outline-secondary btn-lg" href="<?= page_url('reportes') ?>"><i class="bi bi-file-earmark-excel"></i> Reportes</a>
     </div>
 
     <section class="content-panel mt-4">
@@ -172,4 +172,5 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     </section>
 </main>
 <?php require_once APP_INCLUDES_PATH . '/footer.php'; ?>
+
 

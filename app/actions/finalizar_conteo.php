@@ -2,6 +2,7 @@
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 require_once APP_INCLUDES_PATH . '/conteo_items.php';
+require_once APP_INCLUDES_PATH . '/excel_exports.php';
 require_login();
 
 header('Content-Type: application/json; charset=utf-8');
@@ -11,17 +12,6 @@ if (current_user_role() === 'admin') {
     echo json_encode(['ok' => false, 'message' => 'El administrador solo crea conteos']);
     exit;
 }
-
-$autoload = ROOT_PATH . '/vendor/autoload.php';
-if (!file_exists($autoload)) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'message' => 'Instale PhpSpreadsheet con Composer']);
-    exit;
-}
-require_once $autoload;
-
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 $payload = json_decode(file_get_contents('php://input'), true);
 if (!is_array($payload) || !verify_csrf($payload['csrf_token'] ?? null)) {
@@ -63,42 +53,7 @@ try {
         throw new RuntimeException('Sin productos validos');
     }
 
-    $stmt = $pdo->prepare(
-        'SELECT d.codigo, d.descripcion, d.cantidad, u.nombre AS usuario
-         FROM conteo_detalle d
-         INNER JOIN conteos c ON c.id = d.conteo_id
-         INNER JOIN usuarios u ON u.id = c.usuario_id
-         WHERE d.conteo_id = ?
-         ORDER BY d.id'
-    );
-    $stmt->execute([$conteoId]);
-    $detalles = $stmt->fetchAll();
-    if (!$detalles) {
-        throw new RuntimeException('Sin detalle');
-    }
-
-    $dir = UPLOADS_PATH . '/conteos';
-    if (!is_dir($dir)) {
-        mkdir($dir, 0775, true);
-    }
-    $relativePath = 'uploads/conteos/conteo_' . $conteoId . '_' . date('Ymd_His') . '.xlsx';
-    $fullPath = PUBLIC_PATH . '/' . $relativePath;
-
-    $spreadsheet = new Spreadsheet();
-    $sheet = $spreadsheet->getActiveSheet();
-    $sheet->fromArray(['Codigo', 'Descripcion', 'Cantidad', 'Usuario'], null, 'A1');
-    $row = 2;
-    foreach ($detalles as $detalle) {
-        $sheet->setCellValue("A{$row}", $detalle['codigo']);
-        $sheet->setCellValue("B{$row}", $detalle['descripcion']);
-        $sheet->setCellValue("C{$row}", (float) $detalle['cantidad']);
-        $sheet->setCellValue("D{$row}", $detalle['usuario']);
-        $row++;
-    }
-    foreach (range('A', 'D') as $column) {
-        $sheet->getColumnDimension($column)->setAutoSize(true);
-    }
-    (new Xlsx($spreadsheet))->save($fullPath);
+    $relativePath = generar_excel_conteo($pdo, $conteoId);
 
     $stmt = $pdo->prepare("UPDATE conteos SET estado = 'finalizado', fecha_finalizacion = NOW(), archivo_excel = ? WHERE id = ?");
     $stmt->execute([$relativePath, $conteoId]);
@@ -124,7 +79,7 @@ try {
         'ok' => true,
         'conteo_id' => $conteoId,
         'message' => 'Conteo finalizado',
-        'download_url' => BASE_URL . '/actions/descargar_excel.php?id=' . $conteoId,
+        'download_url' => action_url('descargar_excel', ['id' => $conteoId]),
     ]);
 } catch (Throwable $exception) {
     if ($pdo->inTransaction()) {
@@ -133,4 +88,5 @@ try {
     http_response_code(500);
     echo json_encode(['ok' => false, 'message' => 'No se pudo finalizar el conteo']);
 }
+
 

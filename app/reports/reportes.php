@@ -4,7 +4,7 @@ require_once APP_INCLUDES_PATH . '/auth.php';
 require_login();
 
 if (current_user_role() !== 'admin') {
-    header('Location: ' . BASE_URL . '/conteo.php');
+    header('Location: ' . page_url('conteo'));
     exit;
 }
 
@@ -47,7 +47,7 @@ $conteos = $stmt->fetchAll();
 $tomas = [];
 if (current_user_role() === 'admin') {
     $stmt = $pdo->query(
-        "SELECT t.id, t.nombre_toma, t.estado, t.fecha_creacion, t.fecha_finalizacion,
+        "SELECT t.id, t.nombre_toma, t.estado, t.fecha_creacion, t.fecha_finalizacion, t.archivo_excel,
                 COUNT(DISTINCT tu.id) AS asignados,
                 COUNT(DISTINCT CASE WHEN tu.estado = 'finalizado' THEN tu.id END) AS finalizados,
                 COUNT(DISTINCT c.id) AS conteos_creados,
@@ -92,7 +92,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
 
     <section class="content-panel mb-4">
         <div class="section-title"><h2>Reporte por rango de fechas</h2></div>
-        <form class="row g-3 mb-3" method="get" action="<?= BASE_URL ?>/reportes.php">
+        <form class="row g-3 mb-3" method="get" action="<?= page_url('reportes') ?>">
             <input type="hidden" name="estado" value="<?= e($estado) ?>">
             <div class="col-12 col-md-4">
                 <label class="form-label" for="fecha_desde">Desde</label>
@@ -141,13 +141,19 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
                             <td><?= (int) $toma['finalizados'] ?></td>
                             <td><?= e($toma['fecha_finalizacion'] ?? '-') ?></td>
                             <td>
-                                <?php if ((int) $toma['conteos_con_detalle'] > 0): ?>
-                                    <a class="btn btn-sm btn-success" href="<?= BASE_URL ?>/actions/descargar_consolidado.php?toma_id=<?= (int) $toma['id'] ?>"><i class="bi bi-download"></i> Consolidado</a>
+                                <?php if (!empty($toma['archivo_excel'])): ?>
+                                    <a class="btn btn-sm btn-success" href="<?= action_url('descargar_consolidado', ['toma_id' => (int) $toma['id']]) ?>"><i class="bi bi-download"></i> Descargar</a>
+                                <?php elseif ((int) $toma['conteos_con_detalle'] > 0): ?>
+                                    <form method="post" action="<?= action_url('generar_consolidado') ?>">
+                                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                        <input type="hidden" name="toma_id" value="<?= (int) $toma['id'] ?>">
+                                        <button class="btn btn-sm btn-success" type="submit"><i class="bi bi-file-earmark-spreadsheet"></i> Generar</button>
+                                    </form>
                                 <?php else: ?>
                                     <span class="text-secondary">Pendiente</span>
                                 <?php endif; ?>
                             </td>
-                            <td><a class="btn btn-sm btn-outline-primary" href="<?= BASE_URL ?>/toma_detalle.php?id=<?= (int) $toma['id'] ?>">Ver detalle</a></td>
+                            <td><a class="btn btn-sm btn-outline-primary" href="<?= page_url('toma_detalle') ?>?id=<?= (int) $toma['id'] ?>">Ver detalle</a></td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if (!$tomas): ?>
@@ -159,7 +165,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     </section>
     <?php endif; ?>
 
-    <form class="filter-tabs mb-3" method="get" action="<?= BASE_URL ?>/reportes.php">
+    <form class="filter-tabs mb-3" method="get" action="<?= page_url('reportes') ?>">
         <input type="hidden" name="fecha_desde" value="<?= e($fechaDesde) ?>">
         <input type="hidden" name="fecha_hasta" value="<?= e($fechaHasta) ?>">
         <button class="btn <?= $estado === '' ? 'btn-primary' : 'btn-outline-primary' ?>" name="estado" value="" type="submit">Todos</button>
@@ -190,7 +196,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
                             <td><?= e($conteo['fecha_finalizacion'] ?? '-') ?></td>
                             <td>
                                 <?php if ($conteo['estado'] === 'finalizado' && $conteo['archivo_excel']): ?>
-                                    <a class="btn btn-sm btn-success" href="<?= BASE_URL ?>/actions/descargar_excel.php?id=<?= (int) $conteo['id'] ?>"><i class="bi bi-download"></i> Descargar</a>
+                                    <a class="btn btn-sm btn-success" href="<?= action_url('descargar_excel') ?>?id=<?= (int) $conteo['id'] ?>"><i class="bi bi-download"></i> Descargar</a>
                                 <?php else: ?>
                                     <span class="text-secondary">Pendiente</span>
                                 <?php endif; ?>
@@ -206,4 +212,5 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     </section>
 </main>
 <?php require_once APP_INCLUDES_PATH . '/footer.php'; ?>
+
 

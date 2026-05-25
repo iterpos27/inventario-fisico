@@ -5,7 +5,7 @@ require_admin();
 
 $tomaId = (int) ($_GET['id'] ?? 0);
 if ($tomaId <= 0) {
-    header('Location: ' . BASE_URL . '/reportes.php');
+    header('Location: ' . page_url('reportes'));
     exit;
 }
 
@@ -18,7 +18,7 @@ $stmt = $pdo->prepare(
 $stmt->execute([$tomaId]);
 $toma = $stmt->fetch();
 if (!$toma) {
-    header('Location: ' . BASE_URL . '/reportes.php');
+    header('Location: ' . page_url('reportes'));
     exit;
 }
 
@@ -67,6 +67,9 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     <?php if (!empty($_GET['error']) && $_GET['error'] === 'edicion'): ?>
         <div class="alert alert-danger">No se pudo habilitar el conteo.</div>
     <?php endif; ?>
+    <?php if (!empty($_GET['error']) && $_GET['error'] === 'consolidado'): ?>
+        <div class="alert alert-danger">No se pudo generar el consolidado.</div>
+    <?php endif; ?>
 
     <div class="page-heading">
         <div>
@@ -74,8 +77,8 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
             <h1>Detalle de toma</h1>
         </div>
         <div class="quick-actions">
-            <a class="btn btn-outline-primary" href="<?= BASE_URL ?>/conteo.php"><i class="bi bi-arrow-left"></i> Volver</a>
-            <form method="post" action="<?= BASE_URL ?>/actions/cambiar_estado_toma.php" onsubmit="return confirm('<?= $toma['estado'] === 'abierta' ? 'Cerrar esta toma? Los usuarios no podran seguir editando.' : 'Reabrir esta toma para permitir edicion?' ?>');">
+            <a class="btn btn-outline-primary" href="<?= page_url('conteo') ?>"><i class="bi bi-arrow-left"></i> Volver</a>
+            <form method="post" action="<?= action_url('cambiar_estado_toma') ?>" onsubmit="return confirm('<?= $toma['estado'] === 'abierta' ? 'Cerrar esta toma? Los usuarios no podran seguir editando.' : 'Reabrir esta toma para permitir edicion?' ?>');">
                 <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="toma_id" value="<?= (int) $toma['id'] ?>">
                 <input type="hidden" name="accion" value="<?= $toma['estado'] === 'abierta' ? 'cerrar' : 'reabrir' ?>">
@@ -85,7 +88,11 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
                 </button>
             </form>
             <?php if ($lineas > 0): ?>
-                <a class="btn btn-success" href="<?= BASE_URL ?>/actions/descargar_consolidado.php?toma_id=<?= (int) $toma['id'] ?>"><i class="bi bi-download"></i> Consolidado</a>
+                <form method="post" action="<?= action_url('generar_consolidado') ?>">
+                    <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                    <input type="hidden" name="toma_id" value="<?= (int) $toma['id'] ?>">
+                    <button class="btn btn-success" type="submit"><i class="bi bi-download"></i> Consolidado</button>
+                </form>
             <?php endif; ?>
         </div>
     </div>
@@ -173,8 +180,8 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
                             <td><?= e($participante['fecha_finalizacion'] ?? '-') ?></td>
                             <td>
                                 <?php if ($participante['conteo_estado'] === 'finalizado' && $participante['archivo_excel']): ?>
-                                    <a class="btn btn-sm btn-success" href="<?= BASE_URL ?>/actions/descargar_excel.php?id=<?= (int) $participante['conteo_id'] ?>"><i class="bi bi-download"></i> Descargar</a>
-                                    <form class="mt-2" method="post" action="<?= BASE_URL ?>/actions/habilitar_conteo_usuario.php" onsubmit="return confirm('Habilitar nuevamente este conteo para edicion?');">
+                                    <a class="btn btn-sm btn-success" href="<?= action_url('descargar_excel') ?>?id=<?= (int) $participante['conteo_id'] ?>"><i class="bi bi-download"></i> Descargar</a>
+                                    <form class="mt-2" method="post" action="<?= action_url('habilitar_conteo_usuario') ?>" onsubmit="return confirm('Habilitar nuevamente este conteo para edicion?');">
                                         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                                         <input type="hidden" name="toma_id" value="<?= (int) $toma['id'] ?>">
                                         <input type="hidden" name="usuario_id" value="<?= (int) $participante['usuario_id'] ?>">
@@ -195,4 +202,5 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     </section>
 </main>
 <?php require_once APP_INCLUDES_PATH . '/footer.php'; ?>
+
 

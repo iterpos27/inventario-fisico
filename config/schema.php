@@ -124,6 +124,19 @@ function ensure_schema(PDO $pdo): void
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
 
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS login_attempts (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            usuario VARCHAR(120) NOT NULL,
+            ip VARCHAR(45) NOT NULL,
+            intentos INT UNSIGNED NOT NULL DEFAULT 0,
+            bloqueado_hasta DATETIME NULL,
+            ultimo_intento DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_login_attempt (usuario, ip),
+            INDEX idx_login_attempts_bloqueo (bloqueado_hasta)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
     ensure_column_exists($pdo, 'conteos', 'toma_id', 'toma_id INT UNSIGNED NULL AFTER id');
     ensure_column_exists($pdo, 'tomas_fisicas', 'fecha_habilitacion', 'fecha_habilitacion DATE NULL AFTER fecha_toma');
     ensure_column_exists($pdo, 'tomas_fisicas', 'fecha_cierre', 'fecha_cierre DATE NULL AFTER fecha_habilitacion');
@@ -160,16 +173,16 @@ function ensure_schema(PDO $pdo): void
         // La llave foranea ya puede existir o no estar disponible en datos antiguos.
     }
 
-    $oldAdminHash = '$2y$10$4bG34LfURR5Ua9DRXo.UneDnfgM6fAF/xyKi6jSEqhm2A8psnHPOC';
-    $currentAdminHash = '$2y$10$fqF1pDCz79WKhYMwU8rsneZN.HEboXW0Whd8hxfoKGVQlx/eESn0q';
-    $stmt = $pdo->prepare(
-        "INSERT INTO usuarios (nombre, usuario, password, rol, estado)
-         VALUES (?, ?, ?, 'admin', 1)
-         ON DUPLICATE KEY UPDATE usuario = usuario"
-    );
-    $stmt->execute(['Administrador', 'admin', $currentAdminHash]);
-
-    $stmt = $pdo->prepare('UPDATE usuarios SET password = ? WHERE usuario = ? AND password = ?');
-    $stmt->execute([$currentAdminHash, 'admin', $oldAdminHash]);
+    $seedAdminUser = trim((string) env_value('APP_SEED_ADMIN_USER', ''));
+    $seedAdminPassword = (string) env_value('APP_SEED_ADMIN_PASSWORD', '');
+    if ($seedAdminUser !== '' && strlen($seedAdminPassword) >= 12) {
+        $stmt = $pdo->prepare(
+            "INSERT INTO usuarios (nombre, usuario, password, rol, estado)
+             VALUES (?, ?, ?, 'admin', 1)
+             ON DUPLICATE KEY UPDATE usuario = usuario"
+        );
+        $stmt->execute(['Administrador', $seedAdminUser, password_hash($seedAdminPassword, PASSWORD_DEFAULT)]);
+    }
 }
+
 

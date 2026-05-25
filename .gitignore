@@ -1,5 +1,10 @@
 composer.phar
+.env
 /vendor/
+/storage/imports/*
+/storage/conteos/*
+!/storage/imports/.gitkeep
+!/storage/conteos/.gitkeep
 /public/uploads/productos/*
 /public/uploads/conteos/*
 !/public/uploads/productos/.gitkeep

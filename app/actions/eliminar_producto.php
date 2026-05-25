@@ -4,22 +4,23 @@ require_once APP_INCLUDES_PATH . '/auth.php';
 require_admin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?? null)) {
-    header('Location: ' . BASE_URL . '/productos.php?error=Solicitud invalida');
+    header('Location: ' . page_url('productos', ['error' => 'Solicitud invalida']));
     exit;
 }
 
 $id = (int) ($_POST['id'] ?? 0);
 if ($id <= 0) {
-    header('Location: ' . BASE_URL . '/productos.php?error=Producto invalido');
+    header('Location: ' . page_url('productos', ['error' => 'Producto invalido']));
     exit;
 }
 
 try {
     $stmt = $pdo->prepare('UPDATE productos SET estado = 0 WHERE id = ?');
     $stmt->execute([$id]);
-    header('Location: ' . BASE_URL . '/productos.php?msg=Producto eliminado correctamente');
+    header('Location: ' . page_url('productos', ['msg' => 'Producto eliminado correctamente']));
 } catch (Throwable $exception) {
-    header('Location: ' . BASE_URL . '/productos.php?error=No se pudo eliminar el producto');
+    header('Location: ' . page_url('productos', ['error' => 'No se pudo eliminar el producto']));
 }
 exit;
+
 

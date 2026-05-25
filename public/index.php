@@ -40,6 +40,7 @@ $actions = [
     'finalizar_conteo' => APP_PATH . '/actions/finalizar_conteo.php',
     'guardar_agencia' => APP_PATH . '/actions/guardar_agencia.php',
     'guardar_borrador' => APP_PATH . '/actions/guardar_borrador.php',
+    'generar_consolidado' => APP_PATH . '/actions/generar_consolidado.php',
     'habilitar_conteo_usuario' => APP_PATH . '/actions/habilitar_conteo_usuario.php',
     'importar_productos' => APP_PATH . '/actions/importar_productos.php',
     'importar_productos_procesar' => APP_PATH . '/actions/importar_productos_procesar.php',
@@ -52,10 +53,15 @@ $requestPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? ''
 $segments = $requestPath === '' ? [] : explode('/', $requestPath);
 $file = basename(end($segments) ?: '');
 $parent = count($segments) > 1 ? $segments[count($segments) - 2] : '';
+$route = $file;
+$baseFolder = trim(basename(BASE_URL), '/');
+if ($route === $baseFolder || $route === 'public') {
+    $route = '';
+}
 
 $action = (string) ($_GET['action'] ?? '');
-if ($action === '' && $parent === 'actions' && str_ends_with($file, '.php')) {
-    $action = basename($file, '.php');
+if ($action === '' && $parent === 'actions') {
+    $action = basename($route, '.php');
 }
 
 if ($action !== '') {
@@ -69,8 +75,8 @@ if ($action !== '') {
 }
 
 $page = (string) ($_GET['page'] ?? '');
-if ($page === '' && str_ends_with($file, '.php') && $file !== 'index.php') {
-    $page = basename($file, '.php');
+if ($page === '' && $route !== '' && $route !== 'index.php') {
+    $page = basename($route, '.php');
 }
 if ($page === '') {
     $page = is_logged_in() ? (current_user_role() === 'admin' ? 'dashboard' : 'conteo') : 'login';
@@ -84,4 +90,5 @@ if (!isset($pages[$page])) {
 define('CURRENT_ROUTE', $page);
 $_SERVER['PHP_SELF'] = BASE_URL . '/' . $page . '.php';
 require $pages[$page];
+
 

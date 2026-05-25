@@ -12,7 +12,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
 <main class="container py-4">
     <div class="page-heading"><div><p class="eyebrow">Administracion</p><h1>Usuarios</h1></div></div>
     <section class="content-panel mb-4">
-        <form class="row g-3" action="<?= BASE_URL ?>/actions/crear_usuario.php" method="post">
+        <form class="row g-3" action="<?= action_url('crear_usuario') ?>" method="post">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="col-md-4"><label class="form-label">Nombre</label><input class="form-control" name="nombre" required></div>
             <div class="col-md-3"><label class="form-label">Usuario</label><input class="form-control" name="usuario" required></div>
@@ -31,4 +31,5 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     </section>
 </main>
 <?php require_once APP_INCLUDES_PATH . '/footer.php'; ?>
+
 

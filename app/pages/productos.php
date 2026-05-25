@@ -65,8 +65,8 @@ $queryBase = [];
 if ($q !== '') {
     $queryBase['q'] = $q;
 }
-$prevUrl = BASE_URL . '/productos.php?' . http_build_query($queryBase + ['page' => max(1, $page - 1)]);
-$nextUrl = BASE_URL . '/productos.php?' . http_build_query($queryBase + ['page' => min($totalPages, $page + 1)]);
+$prevUrl = page_url('productos', $queryBase + ['page' => max(1, $page - 1)]);
+$nextUrl = page_url('productos', $queryBase + ['page' => min($totalPages, $page + 1)]);
 
 $errorMessage = trim((string) ($_GET['error'] ?? ''));
 if ($excelReady && str_contains($errorMessage, 'composer require phpoffice/phpspreadsheet')) {
@@ -106,7 +106,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     <?php endif; ?>
 
     <section class="count-tool mb-3">
-        <form action="<?= BASE_URL ?>/productos.php" method="get" id="formBuscarProductoAdmin">
+        <form action="<?= page_url('productos') ?>" method="get" id="formBuscarProductoAdmin">
             <label class="form-label" for="buscarProductoAdmin">Buscar producto</label>
             <div class="position-relative">
                 <input class="form-control form-control-lg search-input" id="buscarProductoAdmin" name="q" value="<?= e($q) ?>" placeholder="Codigo o descripcion" autocomplete="off">
@@ -149,7 +149,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
                                     >
                                         <i class="bi bi-pencil-square"></i> Editar
                                     </button>
-                                    <form action="<?= BASE_URL ?>/actions/eliminar_producto.php" method="post" data-delete-product>
+                                    <form action="<?= action_url('eliminar_producto') ?>" method="post" data-delete-product>
                                         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                                         <input type="hidden" name="id" value="<?= (int) $producto['id'] ?>">
                                         <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i> Eliminar</button>
@@ -175,7 +175,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
 <div class="modal fade" id="modalAgregarProducto" tabindex="-1" aria-labelledby="modalAgregarProductoTitulo" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form action="<?= BASE_URL ?>/actions/agregar_producto.php" method="post">
+            <form action="<?= action_url('agregar_producto') ?>" method="post">
                 <div class="modal-header">
                     <h2 class="modal-title fs-5" id="modalAgregarProductoTitulo">Agregar producto</h2>
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -203,7 +203,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
 <div class="modal fade" id="modalImportarProducto" tabindex="-1" aria-labelledby="modalImportarProductoTitulo" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form action="<?= BASE_URL ?>/actions/importar_productos_procesar.php" method="post" enctype="multipart/form-data">
+            <form action="<?= action_url('importar_productos_procesar') ?>" method="post" enctype="multipart/form-data">
                 <div class="modal-header">
                     <h2 class="modal-title fs-5" id="modalImportarProductoTitulo">Importar productos</h2>
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -228,7 +228,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
 <div class="modal fade" id="modalEditarProducto" tabindex="-1" aria-labelledby="modalEditarProductoTitulo" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form action="<?= BASE_URL ?>/actions/editar_producto.php" method="post">
+            <form action="<?= action_url('editar_producto') ?>" method="post">
                 <div class="modal-header">
                     <h2 class="modal-title fs-5" id="modalEditarProductoTitulo">Editar producto</h2>
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -254,7 +254,8 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     </div>
 </div>
 
-<script src="<?= BASE_URL ?>/assets/js/productos.js?v=<?= e($productosJsVersion) ?>"></script>
+<script src="<?= asset_url('js/productos.js') ?>?v=<?= e($productosJsVersion) ?>"></script>
 <?php require_once APP_INCLUDES_PATH . '/footer.php'; ?>
+
 
 

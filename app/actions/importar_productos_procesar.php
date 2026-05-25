@@ -4,13 +4,13 @@ require_once APP_INCLUDES_PATH . '/auth.php';
 require_admin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?? null)) {
-    header('Location: ' . BASE_URL . '/productos.php?error=Solicitud invalida');
+    header('Location: ' . page_url('productos', ['error' => 'Solicitud invalida']));
     exit;
 }
 
 $autoload = ROOT_PATH . '/vendor/autoload.php';
 if (!file_exists($autoload)) {
-    header('Location: ' . BASE_URL . '/productos.php?error=Instale dependencias con composer require phpoffice/phpspreadsheet');
+    header('Location: ' . page_url('productos', ['error' => 'Instale dependencias con composer require phpoffice/phpspreadsheet']));
     exit;
 }
 require_once $autoload;
@@ -24,29 +24,36 @@ foreach (['zip', 'gd'] as $extension) {
     }
 }
 if ($missingPhpExtensions) {
-    header('Location: ' . BASE_URL . '/productos.php?error=' . urlencode(
-        'Apache no tiene activas las extensiones PHP requeridas: ' . implode(', ', $missingPhpExtensions) . '. Active las extensiones en XAMPP y reinicie Apache.'
-    ));
+    header('Location: ' . page_url('productos', [
+        'error' => 'Apache no tiene activas las extensiones PHP requeridas: ' . implode(', ', $missingPhpExtensions) . '. Active las extensiones en XAMPP y reinicie Apache.',
+    ]));
     exit;
 }
 
 if (empty($_FILES['archivo']['tmp_name']) || $_FILES['archivo']['error'] !== UPLOAD_ERR_OK) {
-    header('Location: ' . BASE_URL . '/productos.php?error=Seleccione un archivo valido');
+    header('Location: ' . page_url('productos', ['error' => 'Seleccione un archivo valido']));
+    exit;
+}
+if ((int) ($_FILES['archivo']['size'] ?? 0) > 10 * 1024 * 1024) {
+    header('Location: ' . page_url('productos', ['error' => 'El archivo no puede superar 10 MB']));
     exit;
 }
 
 $extension = strtolower(pathinfo($_FILES['archivo']['name'], PATHINFO_EXTENSION));
 if (!in_array($extension, ['xlsx', 'xls', 'csv'], true)) {
-    header('Location: ' . BASE_URL . '/productos.php?error=Formato no permitido');
+    header('Location: ' . page_url('productos', ['error' => 'Formato no permitido']));
     exit;
 }
 
-$uploadDir = UPLOADS_PATH . '/productos';
+$uploadDir = STORAGE_PATH . '/imports';
 if (!is_dir($uploadDir)) {
     mkdir($uploadDir, 0775, true);
 }
-$savedFile = $uploadDir . '/productos_' . date('Ymd_His') . '.' . $extension;
-move_uploaded_file($_FILES['archivo']['tmp_name'], $savedFile);
+$savedFile = $uploadDir . DIRECTORY_SEPARATOR . 'productos_' . bin2hex(random_bytes(8)) . '_' . date('Ymd_His') . '.' . $extension;
+if (!move_uploaded_file($_FILES['archivo']['tmp_name'], $savedFile)) {
+    header('Location: ' . page_url('productos', ['error' => 'No se pudo guardar el archivo temporal']));
+    exit;
+}
 
 try {
     $spreadsheet = IOFactory::load($savedFile);
@@ -88,12 +95,16 @@ try {
     }
     $pdo->commit();
 
-    header('Location: ' . BASE_URL . '/productos.php?msg=' . urlencode("Importacion completada: {$procesados} productos procesados"));
+    @unlink($savedFile);
+    header('Location: ' . page_url('productos', ['msg' => "Importacion completada: {$procesados} productos procesados"]));
 } catch (Throwable $exception) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    header('Location: ' . BASE_URL . '/productos.php?error=' . urlencode('No se pudo importar: ' . $exception->getMessage()));
+    error_log('Error al importar productos: ' . $exception->getMessage());
+    @unlink($savedFile);
+    header('Location: ' . page_url('productos', ['error' => 'No se pudo importar el archivo. Revise el formato e intente nuevamente.']));
 }
 exit;
+
 

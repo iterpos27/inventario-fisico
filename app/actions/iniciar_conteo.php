@@ -4,13 +4,13 @@ require_once APP_INCLUDES_PATH . '/auth.php';
 require_login();
 
 if (current_user_role() === 'admin') {
-    header('Location: ' . BASE_URL . '/conteo.php');
+    header('Location: ' . page_url('conteo'));
     exit;
 }
 
 $tomaId = (int) ($_GET['toma_id'] ?? 0);
 if ($tomaId <= 0) {
-    header('Location: ' . BASE_URL . '/conteo.php');
+    header('Location: ' . page_url('conteo'));
     exit;
 }
 
@@ -47,12 +47,13 @@ try {
     $stmt->execute([$tomaId, (int) $_SESSION['usuario_id']]);
 
     $pdo->commit();
-    header('Location: ' . BASE_URL . '/conteo.php?id=' . $conteoId);
+    header('Location: ' . page_url('conteo', ['id' => $conteoId]));
 } catch (Throwable $exception) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    header('Location: ' . BASE_URL . '/conteo.php');
+    header('Location: ' . page_url('conteo'));
 }
 exit;
+
 

@@ -3,7 +3,7 @@ require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 
 if (is_logged_in()) {
-    header('Location: ' . BASE_URL . (current_user_role() === 'admin' ? '/dashboard.php' : '/conteo.php'));
+    header('Location: ' . page_url(current_user_role() === 'admin' ? 'dashboard' : 'conteo'));
     exit;
 }
 
@@ -18,18 +18,22 @@ require_once APP_INCLUDES_PATH . '/header.php';
             <p class="text-secondary mb-0">Sistema de Conteo e Inventario</p>
         </div>
 
-        <?php if (!empty($_GET['error'])): ?>
-            <div class="alert alert-danger">Usuario o contraseÃ±a incorrectos.</div>
+        <?php if (!empty($_GET['error']) && $_GET['error'] === 'bloqueado'): ?>
+            <div class="alert alert-danger">Demasiados intentos. Espere 15 minutos e intente nuevamente.</div>
+        <?php elseif (!empty($_GET['error']) && $_GET['error'] === 'sesion'): ?>
+            <div class="alert alert-warning">La sesion expiro por inactividad.</div>
+        <?php elseif (!empty($_GET['error'])): ?>
+            <div class="alert alert-danger">Usuario o contrasena incorrectos.</div>
         <?php endif; ?>
 
-        <form action="<?= BASE_URL ?>/actions/login_procesar.php" method="post" autocomplete="off">
+        <form action="<?= action_url('login_procesar') ?>" method="post" autocomplete="off">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="mb-3">
                 <label class="form-label" for="usuario">Usuario</label>
                 <input class="form-control form-control-lg" type="text" id="usuario" name="usuario" required autofocus>
             </div>
             <div class="mb-4">
-                <label class="form-label" for="password">ContraseÃ±a</label>
+                <label class="form-label" for="password">Contrasena</label>
                 <input class="form-control form-control-lg" type="password" id="password" name="password" required>
             </div>
             <button class="btn btn-primary btn-lg w-100" type="submit">Ingresar</button>
@@ -37,4 +41,3 @@ require_once APP_INCLUDES_PATH . '/header.php';
     </section>
 </main>
 <?php require_once APP_INCLUDES_PATH . '/footer.php'; ?>
-

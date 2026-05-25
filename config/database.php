@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/app.php';
 
-$dbHost = 'localhost';
-$dbName = 'centro_ruliman_inventario';
-$dbUser = 'root';
-$dbPass = 'admin';
-$dbCharset = 'utf8mb4';
+$dbHost = env_value('DB_HOST', 'localhost');
+$dbName = env_value('DB_NAME', 'centro_ruliman_inventario');
+$dbUser = env_value('DB_USER', 'inventario_app');
+$dbPass = env_value('DB_PASS', '');
+$dbCharset = env_value('DB_CHARSET', 'utf8mb4');
 
 $dsn = "mysql:host={$dbHost};dbname={$dbName};charset={$dbCharset}";
 
@@ -24,5 +24,6 @@ try {
     http_response_code(500);
     exit('No se pudo conectar a la base de datos. Revise config/database.php.');
 }
+
 
 

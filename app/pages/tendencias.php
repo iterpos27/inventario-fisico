@@ -3,6 +3,7 @@ require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 require_login();
 
-header('Location: ' . BASE_URL . '/dashboard.php');
+header('Location: ' . page_url('dashboard'));
 exit;
+
 

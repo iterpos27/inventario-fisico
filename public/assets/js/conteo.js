@@ -66,7 +66,7 @@ async function buscarProductos(q) {
     return;
   }
 
-  const response = await fetch(`${baseUrl}/actions/buscar_producto.php?q=${encodeURIComponent(q)}`);
+  const response = await fetch(`${baseUrl}/actions/buscar_producto?q=${encodeURIComponent(q)}`);
   const products = await response.json();
   results.innerHTML = '';
 
@@ -115,7 +115,7 @@ async function guardarBorrador(auto = false) {
   if (state.saving || state.items.size === 0) return null;
   state.saving = true;
   try {
-    const response = await fetch(`${baseUrl}/actions/guardar_borrador.php`, {
+    const response = await fetch(`${baseUrl}/actions/guardar_borrador`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(buildPayload()),
@@ -141,7 +141,7 @@ async function finalizarConteo() {
   if (!confirm('Finalizar conteo? No podra editarlo despues.')) return;
 
   try {
-    const response = await fetch(`${baseUrl}/actions/finalizar_conteo.php`, {
+    const response = await fetch(`${baseUrl}/actions/finalizar_conteo`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(buildPayload()),
@@ -150,7 +150,7 @@ async function finalizarConteo() {
     if (!response.ok || !data.ok) throw new Error(data.message || 'Error');
     showMessage('Conteo finalizado correctamente');
     setTimeout(() => {
-      window.location.href = `${baseUrl}/reportes.php?estado=finalizado`;
+      window.location.href = `${baseUrl}/reportes?estado=finalizado`;
     }, 900);
   } catch (error) {
     showMessage('No se pudo finalizar el conteo', 'danger');
@@ -175,7 +175,7 @@ async function crearConteo() {
   }
 
   try {
-    const response = await fetch(`${baseUrl}/actions/crear_conteo.php`, {
+    const response = await fetch(`${baseUrl}/actions/crear_conteo`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -198,7 +198,7 @@ async function crearConteo() {
     if (userRole === 'admin') {
       showMessage(`Toma creada para ${data.usuarios_asignados || usuarios.length} usuario(s).`);
       setTimeout(() => {
-        window.location.href = `${baseUrl}/conteo.php`;
+        window.location.href = `${baseUrl}/conteo`;
       }, 900);
       return;
     }

@@ -8,7 +8,7 @@ $tomaId = (int) ($_POST['toma_id'] ?? 0);
 $accion = (string) ($_POST['accion'] ?? '');
 
 if ($tomaId <= 0 || !verify_csrf($_POST['csrf_token'] ?? null)) {
-    header('Location: ' . BASE_URL . '/reportes.php');
+    header('Location: ' . page_url('reportes'));
     exit;
 }
 
@@ -53,10 +53,11 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    header('Location: ' . BASE_URL . '/toma_detalle.php?id=' . $tomaId . '&error=estado');
+    header('Location: ' . page_url('toma_detalle', ['id' => $tomaId, 'error' => 'estado']));
     exit;
 }
 
-header('Location: ' . BASE_URL . '/toma_detalle.php?id=' . $tomaId);
+header('Location: ' . page_url('toma_detalle', ['id' => $tomaId]));
 exit;
+
 

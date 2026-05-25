@@ -3,18 +3,49 @@
 declare(strict_types=1);
 
 if (session_status() === PHP_SESSION_NONE) {
+    $secureCookie = env_value('APP_FORCE_HTTPS', '0') === '1' || (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => BASE_URL !== '' ? BASE_URL : '/',
+        'secure' => $secureCookie,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
+}
+
+function enforce_session_timeout(): void
+{
+    $timeout = max(300, (int) env_value('APP_SESSION_TIMEOUT', '3600'));
+    $lastActivity = (int) ($_SESSION['last_activity'] ?? 0);
+    if ($lastActivity > 0 && time() - $lastActivity > $timeout) {
+        $_SESSION = [];
+        if (ini_get('session.use_cookies')) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'] ?? '', (bool) $params['secure'], (bool) $params['httponly']);
+        }
+        session_destroy();
+        header('Location: ' . page_url('login', ['error' => 'sesion']));
+        exit;
+    }
+
+    $_SESSION['last_activity'] = time();
 }
 
 function is_logged_in(): bool
 {
-    return isset($_SESSION['usuario_id']);
+    if (!isset($_SESSION['usuario_id'])) {
+        return false;
+    }
+
+    enforce_session_timeout();
+    return true;
 }
 
 function require_login(): void
 {
     if (!is_logged_in()) {
-        header('Location: ' . BASE_URL . '/login.php');
+        header('Location: ' . page_url('login'));
         exit;
     }
 }
@@ -23,7 +54,7 @@ function require_admin(): void
 {
     require_login();
     if (($_SESSION['rol'] ?? '') !== 'admin') {
-        header('Location: ' . BASE_URL . '/dashboard.php');
+        header('Location: ' . page_url('dashboard'));
         exit;
     }
 }
@@ -56,4 +87,5 @@ function e(?string $value): string
 {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
+
 

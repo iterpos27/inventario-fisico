@@ -32,7 +32,7 @@ if ($conteoId > 0) {
     $conteo = $stmt->fetch();
 
     if (!$conteo || $conteo['estado'] === 'finalizado') {
-        header('Location: ' . BASE_URL . '/conteo.php');
+        header('Location: ' . page_url('conteo'));
         exit;
     }
 
@@ -171,7 +171,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
                             <td><?= (int) $toma['en_proceso'] ?></td>
                             <td><?= (int) $toma['finalizados'] ?></td>
                             <td><?= e(($toma['fecha_habilitacion'] ?? '-') . ' ' . substr((string) ($toma['hora_inicio'] ?? ''), 0, 5) . ' / ' . ($toma['fecha_cierre'] ?? '-') . ' ' . substr((string) ($toma['hora_fin'] ?? ''), 0, 5)) ?></td>
-                            <td><a class="btn btn-sm btn-outline-primary" href="<?= BASE_URL ?>/toma_detalle.php?id=<?= (int) $toma['id'] ?>">Ver detalle</a></td>
+                            <td><a class="btn btn-sm btn-outline-primary" href="<?= page_url('toma_detalle') ?>?id=<?= (int) $toma['id'] ?>">Ver detalle</a></td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if (!$tomasAbiertasAdmin): ?>
@@ -188,7 +188,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
             <div class="section-title"><h2>Conteos disponibles</h2></div>
             <div class="count-list">
                 <?php foreach ($tomasDisponibles as $disponible): ?>
-                    <a class="available-count" href="<?= BASE_URL ?>/actions/iniciar_conteo.php?toma_id=<?= (int) $disponible['toma_id'] ?>">
+                    <a class="available-count" href="<?= action_url('iniciar_conteo') ?>?toma_id=<?= (int) $disponible['toma_id'] ?>">
                         <span><?= nl2br(e($disponible['nombre_toma'])) ?></span>
                         <small><?= (int) $disponible['lineas'] ?> lineas registradas - <?= $disponible['conteo_estado'] === 'borrador' ? 'Continuar' : 'Empezar' ?></small>
                     </a>
@@ -243,6 +243,7 @@ window.CONTEO_INICIAL = <?= json_encode($detalles, JSON_UNESCAPED_UNICODE) ?>;
 window.BASE_URL = '<?= BASE_URL ?>';
 window.USER_ROLE = '<?= e(current_user_role()) ?>';
 </script>
-<script src="<?= BASE_URL ?>/assets/js/conteo.js?v=<?= e($conteoJsVersion) ?>"></script>
+<script src="<?= asset_url('js/conteo.js') ?>?v=<?= e($conteoJsVersion) ?>"></script>
 <?php require_once APP_INCLUDES_PATH . '/footer.php'; ?>
+
 

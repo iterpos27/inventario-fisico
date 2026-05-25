@@ -3,12 +3,25 @@ require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?? null)) {
-    header('Location: ' . BASE_URL . '/login.php?error=1');
+    header('Location: ' . page_url('login', ['error' => 1]));
     exit;
 }
 
 $usuario = trim($_POST['usuario'] ?? '');
 $password = $_POST['password'] ?? '';
+$ip = substr((string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'), 0, 45);
+
+$stmt = $pdo->prepare(
+    'SELECT intentos, bloqueado_hasta
+     FROM login_attempts
+     WHERE usuario = ? AND ip = ?'
+);
+$stmt->execute([$usuario, $ip]);
+$attempt = $stmt->fetch();
+if ($attempt && !empty($attempt['bloqueado_hasta']) && strtotime((string) $attempt['bloqueado_hasta']) > time()) {
+    header('Location: ' . page_url('login', ['error' => 'bloqueado']));
+    exit;
+}
 
 $stmt = $pdo->prepare('SELECT * FROM usuarios WHERE usuario = ? AND estado = 1 LIMIT 1');
 $stmt->execute([$usuario]);
@@ -17,7 +30,16 @@ $user = $stmt->fetch();
 $validPassword = $user && password_verify($password, $user['password']);
 
 if (!$user || !$validPassword) {
-    header('Location: ' . BASE_URL . '/login.php?error=1');
+    $stmt = $pdo->prepare(
+        'INSERT INTO login_attempts (usuario, ip, intentos, bloqueado_hasta, ultimo_intento)
+         VALUES (?, ?, 1, NULL, NOW())
+         ON DUPLICATE KEY UPDATE
+            intentos = intentos + 1,
+            bloqueado_hasta = IF(intentos + 1 >= 5, DATE_ADD(NOW(), INTERVAL 15 MINUTE), bloqueado_hasta),
+            ultimo_intento = NOW()'
+    );
+    $stmt->execute([$usuario, $ip]);
+    header('Location: ' . page_url('login', ['error' => 1]));
     exit;
 }
 
@@ -26,7 +48,12 @@ $_SESSION['usuario_id'] = (int) $user['id'];
 $_SESSION['nombre'] = $user['nombre'];
 $_SESSION['usuario'] = $user['usuario'];
 $_SESSION['rol'] = $user['rol'];
+$_SESSION['last_activity'] = time();
 
-header('Location: ' . BASE_URL . ($user['rol'] === 'admin' ? '/dashboard.php' : '/conteo.php'));
+$stmt = $pdo->prepare('DELETE FROM login_attempts WHERE usuario = ? AND ip = ?');
+$stmt->execute([$usuario, $ip]);
+
+header('Location: ' . page_url($user['rol'] === 'admin' ? 'dashboard' : 'conteo'));
 exit;
+
 

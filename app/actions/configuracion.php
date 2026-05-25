@@ -13,7 +13,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
         <div class="col-lg-6">
             <section class="content-panel h-100">
                 <div class="section-title"><h2>Logo del sistema</h2></div>
-                <form action="<?= BASE_URL ?>/actions/logo_procesar.php" method="post" enctype="multipart/form-data">
+                <form action="<?= action_url('logo_procesar') ?>" method="post" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <input class="form-control form-control-lg mb-3" type="file" name="logo" accept=".png,.jpg,.jpeg,.webp" required>
                     <button class="btn btn-outline-primary btn-lg" type="submit"><i class="bi bi-image"></i> Guardar logo</button>
@@ -29,4 +29,5 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     </div>
 </main>
 <?php require_once APP_INCLUDES_PATH . '/footer.php'; ?>
+
 

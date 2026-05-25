@@ -31,3 +31,4 @@ document.querySelectorAll('.table-responsive table').forEach((table) => {
 </body>
 </html>
 
+

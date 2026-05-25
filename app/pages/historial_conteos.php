@@ -31,7 +31,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
 ?>
 <main class="container py-4">
     <div class="page-heading"><div><p class="eyebrow">Conteo y borradores</p><h1><?= $estado === 'borrador' ? 'Borradores' : 'Historial de conteos' ?></h1></div></div>
-    <form class="filter-tabs mb-3" method="get" action="<?= BASE_URL ?>/historial_conteos.php">
+    <form class="filter-tabs mb-3" method="get" action="<?= page_url('historial_conteos') ?>">
         <button class="btn <?= $estado === '' ? 'btn-primary' : 'btn-outline-primary' ?>" name="estado" value="" type="submit">Todos</button>
         <button class="btn <?= $estado === 'borrador' ? 'btn-primary' : 'btn-outline-primary' ?>" name="estado" value="borrador" type="submit">Borradores</button>
         <button class="btn <?= $estado === 'finalizado' ? 'btn-primary' : 'btn-outline-primary' ?>" name="estado" value="finalizado" type="submit">Finalizados</button>
@@ -59,4 +59,5 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     </section>
 </main>
 <?php require_once APP_INCLUDES_PATH . '/footer.php'; ?>
+
 

@@ -24,13 +24,13 @@ function generar_excel_conteo(PDO $pdo, int $conteoId): string
         throw new RuntimeException('Sin detalle para exportar');
     }
 
-    $dir = UPLOADS_PATH . '/conteos';
+    $dir = STORAGE_PATH . '/conteos';
     if (!is_dir($dir)) {
         mkdir($dir, 0775, true);
     }
 
-    $relativePath = 'uploads/conteos/conteo_' . $conteoId . '_' . date('Ymd_His') . '.xlsx';
-    $fullPath = PUBLIC_PATH . '/' . $relativePath;
+    $relativePath = 'storage/conteos/conteo_' . $conteoId . '_' . date('Ymd_His') . '.xlsx';
+    $fullPath = ROOT_PATH . '/' . $relativePath;
 
     $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
@@ -53,3 +53,4 @@ function generar_excel_conteo(PDO $pdo, int $conteoId): string
 
     return $relativePath;
 }
+

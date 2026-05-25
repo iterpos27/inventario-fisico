@@ -22,7 +22,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
 
     <section class="content-panel mb-4">
         <div class="section-title"><h2>Crear agencia</h2></div>
-        <form class="row g-3" action="<?= BASE_URL ?>/actions/guardar_agencia.php" method="post">
+        <form class="row g-3" action="<?= action_url('guardar_agencia') ?>" method="post">
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <div class="col-12 col-md-4">
                 <label class="form-label" for="nombre">Nombre de agencia</label>
@@ -46,7 +46,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
                             <td><span class="badge text-bg-<?= (int) $agencia['estado'] === 1 ? 'success' : 'warning' ?>"><?= (int) $agencia['estado'] === 1 ? 'Activa' : 'Inactiva' ?></span></td>
                             <td><?= e($agencia['fecha_creacion']) ?></td>
                             <td class="text-end">
-                                <form action="<?= BASE_URL ?>/actions/cambiar_estado_agencia.php" method="post" class="d-inline">
+                                <form action="<?= action_url('cambiar_estado_agencia') ?>" method="post" class="d-inline">
                                     <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                                     <input type="hidden" name="id" value="<?= (int) $agencia['id'] ?>">
                                     <input type="hidden" name="estado" value="<?= (int) $agencia['estado'] === 1 ? 0 : 1 ?>">
@@ -66,4 +66,5 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     </section>
 </main>
 <?php require_once APP_INCLUDES_PATH . '/footer.php'; ?>
+
 

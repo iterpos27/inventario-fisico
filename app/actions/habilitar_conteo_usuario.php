@@ -7,7 +7,7 @@ $tomaId = (int) ($_POST['toma_id'] ?? 0);
 $usuarioId = (int) ($_POST['usuario_id'] ?? 0);
 
 if ($tomaId <= 0 || $usuarioId <= 0 || !verify_csrf($_POST['csrf_token'] ?? null)) {
-    header('Location: ' . BASE_URL . '/reportes.php');
+    header('Location: ' . page_url('reportes'));
     exit;
 }
 
@@ -32,12 +32,13 @@ try {
     $stmt->execute([$tomaId]);
 
     $pdo->commit();
-    header('Location: ' . BASE_URL . '/toma_detalle.php?id=' . $tomaId . '&msg=edicion');
+    header('Location: ' . page_url('toma_detalle', ['id' => $tomaId, 'msg' => 'edicion']));
 } catch (Throwable $exception) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    header('Location: ' . BASE_URL . '/toma_detalle.php?id=' . $tomaId . '&error=edicion');
+    header('Location: ' . page_url('toma_detalle', ['id' => $tomaId, 'error' => 'edicion']));
 }
 exit;
+
 

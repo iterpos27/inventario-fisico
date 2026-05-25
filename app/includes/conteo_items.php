@@ -45,3 +45,4 @@ function reemplazar_detalle_conteo(PDO $pdo, int $conteoId, array $items): int
     return count($productos);
 }
 
+
