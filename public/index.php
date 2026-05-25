@@ -49,6 +49,17 @@ $actions = [
     'logo_procesar' => APP_PATH . '/actions/logo_procesar.php',
 ];
 
+$apiRoutes = [
+    'login' => APP_PATH . '/api/login.php',
+    'logout' => APP_PATH . '/api/logout.php',
+    'tomas' => APP_PATH . '/api/tomas.php',
+    'iniciar_conteo' => APP_PATH . '/api/iniciar_conteo.php',
+    'detalle_conteo' => APP_PATH . '/api/detalle_conteo.php',
+    'productos' => APP_PATH . '/api/productos.php',
+    'guardar_borrador' => APP_PATH . '/api/guardar_borrador.php',
+    'finalizar_conteo' => APP_PATH . '/api/finalizar_conteo.php',
+];
+
 $requestPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '', '/');
 $segments = $requestPath === '' ? [] : explode('/', $requestPath);
 $file = basename(end($segments) ?: '');
@@ -62,6 +73,23 @@ if ($route === $baseFolder || $route === 'public') {
 $action = (string) ($_GET['action'] ?? '');
 if ($action === '' && $parent === 'actions') {
     $action = basename($route, '.php');
+}
+
+$apiRoute = '';
+if ($parent === 'api') {
+    $apiRoute = basename($route, '.php');
+}
+
+if ($apiRoute !== '') {
+    if (!isset($apiRoutes[$apiRoute])) {
+        http_response_code(404);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'message' => 'Endpoint no encontrado']);
+        exit;
+    }
+    define('CURRENT_ROUTE', 'api/' . $apiRoute);
+    require $apiRoutes[$apiRoute];
+    exit;
 }
 
 if ($action !== '') {

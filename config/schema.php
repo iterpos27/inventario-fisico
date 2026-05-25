@@ -137,6 +137,21 @@ function ensure_schema(PDO $pdo): void
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
 
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS api_tokens (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            usuario_id INT UNSIGNED NOT NULL,
+            token_hash CHAR(64) NOT NULL UNIQUE,
+            dispositivo VARCHAR(120) NULL,
+            fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            fecha_expiracion DATETIME NOT NULL,
+            revocado TINYINT(1) NOT NULL DEFAULT 0,
+            CONSTRAINT fk_api_tokens_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+            INDEX idx_api_tokens_usuario (usuario_id),
+            INDEX idx_api_tokens_expiracion (fecha_expiracion)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
     ensure_column_exists($pdo, 'conteos', 'toma_id', 'toma_id INT UNSIGNED NULL AFTER id');
     ensure_column_exists($pdo, 'tomas_fisicas', 'fecha_habilitacion', 'fecha_habilitacion DATE NULL AFTER fecha_toma');
     ensure_column_exists($pdo, 'tomas_fisicas', 'fecha_cierre', 'fecha_cierre DATE NULL AFTER fecha_habilitacion');
