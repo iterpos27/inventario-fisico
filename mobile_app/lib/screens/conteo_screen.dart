@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,23 +28,27 @@ class ConteoScreen extends StatefulWidget {
 
 class _ConteoScreenState extends State<ConteoScreen> {
   final _buscar = TextEditingController();
-  final _cantidad = TextEditingController(text: '1');
   final List<ConteoItem> _items = [];
   late LocalDraftStore _store;
+  Timer? _searchDebounce;
   bool _loading = true;
   bool _saving = false;
+  bool _searching = false;
   List<Producto> _resultados = [];
 
   @override
   void initState() {
     super.initState();
+    _buscar.addListener(() {
+      if (mounted) setState(() {});
+    });
     _init();
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _buscar.dispose();
-    _cantidad.dispose();
     super.dispose();
   }
 
@@ -65,20 +71,46 @@ class _ConteoScreenState extends State<ConteoScreen> {
     }
   }
 
+  void _onBuscarChanged(String value) {
+    _searchDebounce?.cancel();
+    final q = value.trim();
+    if (q.length < 2) {
+      setState(() {
+        _resultados = [];
+        _searching = false;
+      });
+      return;
+    }
+    setState(() => _searching = true);
+    _searchDebounce = Timer(const Duration(milliseconds: 280), () {
+      _buscarProductos(q);
+    });
+  }
+
   Future<void> _buscarProductos([String? term]) async {
     final q = (term ?? _buscar.text).trim();
     if (q.length < 2) {
-      setState(() => _resultados = []);
+      setState(() {
+        _resultados = [];
+        _searching = false;
+      });
       return;
     }
+    setState(() => _searching = true);
     try {
       final productos = await widget.api.buscarProductos(q);
       if (mounted) {
-        setState(() => _resultados = productos);
+        if ((term != null && term == q) || _buscar.text.trim() == q) {
+          setState(() => _resultados = productos);
+        }
       }
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+    } finally {
+      if (mounted) {
+        setState(() => _searching = false);
+      }
     }
   }
 
@@ -92,26 +124,156 @@ class _ConteoScreenState extends State<ConteoScreen> {
   }
 
   Future<void> _addProducto(Producto producto) async {
-    final cantidad = double.tryParse(_cantidad.text.replaceAll(',', '.')) ?? 0;
-    if (cantidad <= 0) {
+    final existingIndex = _items.indexWhere((item) => item.productoId == producto.id);
+    if (existingIndex >= 0) {
+      final existente = _items[existingIndex];
+      final cambiar = await _confirmarCambioCantidad(existente);
+      if (cambiar != true) return;
+
+      final cantidad = await _pedirCantidad(producto, initialValue: _formatCantidad(existente.cantidad));
+      if (cantidad == null) return;
+
+      setState(() {
+        final item = _items.removeAt(existingIndex);
+        item.cantidad = cantidad;
+        _items.insert(0, item);
+        _buscar.clear();
+        _resultados = [];
+      });
+      await _store.save(widget.conteoId, _items);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingrese una cantidad valida')),
+        SnackBar(content: Text('Cantidad actualizada: ${producto.codigo}')),
       );
       return;
     }
 
-    final existingIndex = _items.indexWhere((item) => item.productoId == producto.id);
+    final cantidad = await _pedirCantidad(producto);
+    if (cantidad == null) return;
+
     setState(() {
-      if (existingIndex >= 0) {
-        _items[existingIndex].cantidad = cantidad;
-      } else {
-        _items.add(ConteoItem.fromProducto(producto, cantidad));
-      }
+      _items.insert(0, ConteoItem.fromProducto(producto, cantidad));
       _buscar.clear();
-      _cantidad.text = '1';
       _resultados = [];
     });
     await _store.save(widget.conteoId, _items);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Producto agregado: ${producto.codigo}')),
+    );
+  }
+
+  Future<bool?> _confirmarCambioCantidad(ConteoItem item) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Producto ya registrado'),
+        content: Text('El codigo ${item.codigo} ya esta en el conteo con cantidad ${_formatCantidad(item.cantidad)}. Desea cambiar la cantidad?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Cambiar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<double?> _pedirCantidad(Producto producto, {String initialValue = ''}) async {
+    final controller = TextEditingController(text: initialValue);
+    return showDialog<double>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cantidad'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              producto.codigo,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            Text(producto.descripcion),
+            const SizedBox(height: 14),
+            TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Cantidad',
+                prefixIcon: Icon(Icons.tag),
+              ),
+              onSubmitted: (_) {
+                Navigator.pop(context, double.tryParse(controller.text.replaceAll(',', '.')) ?? 0);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, double.tryParse(controller.text.replaceAll(',', '.')) ?? 0),
+            child: const Text('Aceptar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatCantidad(double value) {
+    return value.truncateToDouble() == value ? value.toStringAsFixed(0) : value.toStringAsFixed(2);
+  }
+
+  Future<void> _eliminarItem(ConteoItem item) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar producto'),
+        content: Text('Desea eliminar ${item.codigo} del conteo?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    setState(() {
+      _items.removeWhere((current) => current.productoId == item.productoId);
+    });
+    await _store.save(widget.conteoId, _items);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Producto eliminado: ${item.codigo}')),
+    );
+  }
+
+  Future<void> _editarCantidadItem(ConteoItem item) async {
+    final cantidad = await _pedirCantidad(
+      Producto(id: item.productoId, codigo: item.codigo, descripcion: item.descripcion),
+      initialValue: _formatCantidad(item.cantidad),
+    );
+    if (cantidad == null) return;
+    setState(() {
+      item.cantidad = cantidad;
+    });
+    await _store.save(widget.conteoId, _items);
+  }
+
+  double get _totalUnidades {
+    return _items.fold<double>(0, (total, item) => total + item.cantidad);
   }
 
   Future<void> _guardar() async {
@@ -225,11 +387,35 @@ class _ConteoScreenState extends State<ConteoScreen> {
                             Expanded(
                               child: TextField(
                                 controller: _buscar,
-                                decoration: const InputDecoration(
+                                textInputAction: TextInputAction.search,
+                                decoration: InputDecoration(
                                   labelText: 'Codigo o descripcion',
-                                  prefixIcon: Icon(Icons.search),
+                                  prefixIcon: const Icon(Icons.search),
+                                  suffixIcon: _searching
+                                      ? const Padding(
+                                          padding: EdgeInsets.all(14),
+                                          child: SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          ),
+                                        )
+                                      : (_buscar.text.isNotEmpty
+                                          ? IconButton(
+                                              onPressed: () {
+                                                _searchDebounce?.cancel();
+                                                setState(() {
+                                                  _buscar.clear();
+                                                  _resultados = [];
+                                                  _searching = false;
+                                                });
+                                              },
+                                              icon: const Icon(Icons.close),
+                                            )
+                                          : null),
                                 ),
-                                onChanged: _buscarProductos,
+                                onChanged: _onBuscarChanged,
+                                onSubmitted: _buscarProductos,
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -239,22 +425,17 @@ class _ConteoScreenState extends State<ConteoScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _cantidad,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          decoration: const InputDecoration(
-                            labelText: 'Cantidad',
-                            prefixIcon: Icon(Icons.tag),
-                          ),
-                        ),
                         if (_resultados.isNotEmpty) ...[
                           const SizedBox(height: 12),
+                          Text(
+                            'Resultados (${_resultados.length})',
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+                          ),
                           ..._resultados.map(
                             (producto) => ListTile(
                               contentPadding: EdgeInsets.zero,
-                              title: Text(producto.descripcion),
-                              subtitle: Text(producto.codigo),
+                              title: Text(producto.codigo),
+                              subtitle: Text(producto.descripcion),
                               trailing: const Icon(Icons.add_circle_outline),
                               onTap: () => _addProducto(producto),
                             ),
@@ -269,6 +450,11 @@ class _ConteoScreenState extends State<ConteoScreen> {
                   'Productos contados (${_items.length})',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                 ),
+                const SizedBox(height: 6),
+                Text(
+                  'Unidades: ${_formatCantidad(_totalUnidades)}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF4E6380)),
+                ),
                 const SizedBox(height: 8),
                 if (_items.isEmpty)
                   const Card(
@@ -281,19 +467,30 @@ class _ConteoScreenState extends State<ConteoScreen> {
                   ..._items.map(
                     (item) => Card(
                       child: ListTile(
-                        title: Text(item.descripcion),
-                        subtitle: Text(item.codigo),
+                        title: Text(item.codigo),
+                        subtitle: Text(item.descripcion),
                         trailing: SizedBox(
-                          width: 96,
-                          child: TextFormField(
-                            initialValue: item.cantidad.toStringAsFixed(item.cantidad.truncateToDouble() == item.cantidad ? 0 : 2),
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            textAlign: TextAlign.end,
-                            decoration: const InputDecoration(isDense: true),
-                            onChanged: (value) async {
-                              item.cantidad = double.tryParse(value.replaceAll(',', '.')) ?? item.cantidad;
-                              await _store.save(widget.conteoId, _items);
-                            },
+                          width: 144,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () => _editarCantidadItem(item),
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size(0, 40),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  ),
+                                  child: Text(_formatCantidad(item.cantidad)),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => _eliminarItem(item),
+                                icon: const Icon(Icons.delete_outline),
+                                color: Theme.of(context).colorScheme.error,
+                                tooltip: 'Eliminar',
+                              ),
+                            ],
                           ),
                         ),
                       ),
