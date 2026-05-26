@@ -18,6 +18,10 @@ foreach (['png', 'jpg', 'jpeg', 'webp'] as $logoExt) {
 $styleVersion = file_exists(PUBLIC_PATH . '/assets/css/style.css')
     ? (string) filemtime(PUBLIC_PATH . '/assets/css/style.css')
     : APP_VERSION;
+$bodyRoleClass = 'app-role-guest';
+if (function_exists('is_logged_in') && is_logged_in()) {
+    $bodyRoleClass = current_user_role() === 'admin' ? 'app-role-admin' : 'app-role-usuario';
+}
 ?>
 <!doctype html>
 <html lang="es">
@@ -29,5 +33,5 @@ $styleVersion = file_exists(PUBLIC_PATH . '/assets/css/style.css')
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="<?= asset_url('css/style.css') ?>?v=<?= e($styleVersion) ?>" rel="stylesheet">
 </head>
-<body>
+<body class="<?= e($bodyRoleClass) ?>">
 

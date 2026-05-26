@@ -8,7 +8,6 @@ if (current_user_role() !== 'admin') {
     exit;
 }
 
-$estado = $_GET['estado'] ?? '';
 $fechaDesde = $_GET['fecha_desde'] ?? date('Y-m-01');
 $fechaHasta = $_GET['fecha_hasta'] ?? date('Y-m-d');
 
@@ -21,28 +20,6 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaHasta)) {
 if ($fechaDesde > $fechaHasta) {
     [$fechaDesde, $fechaHasta] = [$fechaHasta, $fechaDesde];
 }
-
-$params = [];
-$sql = "SELECT c.id, c.nombre_conteo, c.estado, c.fecha_inicio, c.fecha_finalizacion, c.archivo_excel,
-               u.nombre, t.numero_toma, t.estado AS toma_estado
-        FROM conteos c
-        INNER JOIN usuarios u ON u.id = c.usuario_id
-        LEFT JOIN tomas_fisicas t ON t.id = c.toma_id
-        WHERE DATE(c.fecha_inicio) BETWEEN ? AND ?";
-$params[] = $fechaDesde;
-$params[] = $fechaHasta;
-if (in_array($estado, ['borrador', 'finalizado'], true)) {
-    $sql .= ' AND c.estado = ?';
-    $params[] = $estado;
-}
-if (current_user_role() !== 'admin') {
-    $sql .= ' AND c.usuario_id = ?';
-    $params[] = (int) $_SESSION['usuario_id'];
-}
-$sql .= ' ORDER BY c.id DESC';
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$conteos = $stmt->fetchAll();
 
 $tomas = [];
 if (current_user_role() === 'admin') {
@@ -93,7 +70,6 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     <section class="content-panel mb-4">
         <div class="section-title"><h2>Reporte por rango de fechas</h2></div>
         <form class="row g-3 mb-3" method="get" action="<?= page_url('reportes') ?>">
-            <input type="hidden" name="estado" value="<?= e($estado) ?>">
             <div class="col-12 col-md-4">
                 <label class="form-label" for="fecha_desde">Desde</label>
                 <input class="form-control" id="fecha_desde" name="fecha_desde" type="date" value="<?= e($fechaDesde) ?>">
@@ -165,51 +141,6 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     </section>
     <?php endif; ?>
 
-    <form class="filter-tabs mb-3" method="get" action="<?= page_url('reportes') ?>">
-        <input type="hidden" name="fecha_desde" value="<?= e($fechaDesde) ?>">
-        <input type="hidden" name="fecha_hasta" value="<?= e($fechaHasta) ?>">
-        <button class="btn <?= $estado === '' ? 'btn-primary' : 'btn-outline-primary' ?>" name="estado" value="" type="submit">Todos</button>
-        <button class="btn <?= $estado === 'borrador' ? 'btn-primary' : 'btn-outline-primary' ?>" name="estado" value="borrador" type="submit">Borradores</button>
-        <button class="btn <?= $estado === 'finalizado' ? 'btn-primary' : 'btn-outline-primary' ?>" name="estado" value="finalizado" type="submit">Finalizados</button>
-    </form>
-    <section class="content-panel">
-        <div class="section-title"><h2>Conteos individuales</h2></div>
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th>Conteo</th>
-                        <th>Estado</th>
-                        <th>Usuario</th>
-                        <th>Fecha inicio</th>
-                        <th>Fecha finalizacion</th>
-                        <th>Excel</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($conteos as $conteo): ?>
-                        <tr>
-                            <td class="count-name"><?= nl2br(e($conteo['nombre_conteo'])) ?></td>
-                            <td><span class="badge text-bg-<?= $conteo['estado'] === 'finalizado' ? 'success' : 'warning' ?>"><?= e($conteo['estado']) ?></span></td>
-                            <td><?= e($conteo['nombre']) ?></td>
-                            <td><?= e($conteo['fecha_inicio']) ?></td>
-                            <td><?= e($conteo['fecha_finalizacion'] ?? '-') ?></td>
-                            <td>
-                                <?php if ($conteo['estado'] === 'finalizado' && $conteo['archivo_excel']): ?>
-                                    <a class="btn btn-sm btn-success" href="<?= action_url('descargar_excel') ?>?id=<?= (int) $conteo['id'] ?>"><i class="bi bi-download"></i> Descargar</a>
-                                <?php else: ?>
-                                    <span class="text-secondary">Pendiente</span>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                    <?php if (!$conteos): ?>
-                        <tr><td colspan="6" class="text-center text-secondary py-4">No hay conteos para mostrar.</td></tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-    </section>
 </main>
 <?php require_once APP_INCLUDES_PATH . '/footer.php'; ?>
 

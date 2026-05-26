@@ -100,6 +100,9 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
         </div>
     </div>
 
+    <?php if (!empty($_GET['msg'])): ?><div class="alert alert-success"><?= e($_GET['msg']) ?></div><?php endif; ?>
+    <?php if (!empty($_GET['error'])): ?><div class="alert alert-danger"><?= e($_GET['error']) ?></div><?php endif; ?>
+
     <input type="hidden" id="csrfToken" value="<?= csrf_token() ?>">
     <input type="hidden" id="conteoId" value="<?= (int) ($conteo['id'] ?? 0) ?>">
     <input type="hidden" id="conteoCreado" value="<?= $conteo ? '1' : '0' ?>">

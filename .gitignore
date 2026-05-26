@@ -3,6 +3,7 @@ composer.phar
 /vendor/
 /storage/imports/*
 /storage/conteos/*
+/storage/credenciales/*
 !/storage/imports/.gitkeep
 !/storage/conteos/.gitkeep
 /mobile_app/.dart_tool/
