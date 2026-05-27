@@ -13,7 +13,7 @@ $usuario = trim($_POST['usuario'] ?? '');
 $password = $_POST['password'] ?? '';
 $rol = in_array($_POST['rol'] ?? 'usuario', ['admin', 'usuario'], true) ? $_POST['rol'] : 'usuario';
 
-if ($nombre === '' || $usuario === '' || strlen($password) < 6) {
+if ($nombre === '' || $usuario === '' || strlen($password) < 10) {
     header('Location: ' . page_url('usuarios', ['error' => 'Complete todos los datos del usuario']));
     exit;
 }

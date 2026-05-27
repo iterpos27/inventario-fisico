@@ -20,8 +20,8 @@ if ($id <= 0 || $nombre === '' || $usuario === '') {
     exit;
 }
 
-if ($password !== '' && strlen($password) < 6) {
-    header('Location: ' . page_url('usuarios', ['error' => 'La contrasena debe tener al menos 6 caracteres']));
+if ($password !== '' && strlen($password) < 10) {
+    header('Location: ' . page_url('usuarios', ['error' => 'La contrasena debe tener al menos 10 caracteres']));
     exit;
 }
 
@@ -43,4 +43,3 @@ try {
     header('Location: ' . page_url('usuarios', ['error' => 'No se pudo actualizar el usuario']));
 }
 exit;
-

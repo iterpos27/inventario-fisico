@@ -11,13 +11,13 @@ App Flutter para usuarios de conteo.
 En emulador Android, `localhost` apunta al emulador. Use:
 
 ```txt
-http://10.0.2.2/centro_ruliman_inventario
+https://10.0.2.2/centro_ruliman_inventario
 ```
 
 En telefono fisico, use la IP del computador en la red:
 
 ```txt
-http://192.168.1.10/centro_ruliman_inventario
+https://192.168.1.10/centro_ruliman_inventario
 ```
 
 ## Comandos

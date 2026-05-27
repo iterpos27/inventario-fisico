@@ -10,6 +10,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final api = ApiClient(prefs);
+  await api.loadToken();
   runApp(ConteoApp(api: api));
 }
 

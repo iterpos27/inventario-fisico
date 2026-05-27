@@ -27,13 +27,20 @@ class ConteoScreen extends StatefulWidget {
 }
 
 class _ConteoScreenState extends State<ConteoScreen> {
+  static const Duration _serverAutosaveInterval = Duration(minutes: 3);
+
   final _buscar = TextEditingController();
   final List<ConteoItem> _items = [];
   late LocalDraftStore _store;
   Timer? _searchDebounce;
+  Timer? _autosaveDebounce;
+  Timer? _autosaveTimer;
   bool _loading = true;
   bool _saving = false;
   bool _searching = false;
+  bool _autosaving = false;
+  bool _pendingSync = false;
+  String _syncStatus = 'Guardado local';
   List<Producto> _resultados = [];
 
   @override
@@ -48,6 +55,8 @@ class _ConteoScreenState extends State<ConteoScreen> {
   @override
   void dispose() {
     _searchDebounce?.cancel();
+    _autosaveDebounce?.cancel();
+    _autosaveTimer?.cancel();
     _buscar.dispose();
     super.dispose();
   }
@@ -68,6 +77,65 @@ class _ConteoScreenState extends State<ConteoScreen> {
     }
     if (mounted) {
       setState(() => _loading = false);
+    }
+    _autosaveTimer = Timer.periodic(_serverAutosaveInterval, (_) {
+      if (_pendingSync && !_autosaving && _items.isNotEmpty) {
+        _sincronizarBorrador(silent: true);
+      }
+    });
+  }
+
+  Future<void> _guardarLocalYProgramarSync() async {
+    await _store.save(widget.conteoId, _items);
+    if (!mounted) return;
+    setState(() {
+      _pendingSync = true;
+      _syncStatus = 'Pendiente de sincronizar';
+    });
+    _autosaveDebounce?.cancel();
+    _autosaveDebounce = Timer(_serverAutosaveInterval, () {
+      _sincronizarBorrador(silent: true);
+    });
+  }
+
+  Future<void> _sincronizarBorrador({bool silent = false}) async {
+    if (_items.isEmpty || _autosaving) return;
+    if (mounted) {
+      setState(() {
+        _autosaving = true;
+        _syncStatus = 'Autoguardando...';
+      });
+    }
+    try {
+      await widget.api.guardarBorrador(widget.conteoId, _items);
+      await _store.save(widget.conteoId, _items);
+      if (!mounted) return;
+      final now = TimeOfDay.now().format(context);
+      setState(() {
+        _pendingSync = false;
+        _syncStatus = 'Autoguardado $now';
+      });
+      if (!silent) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Borrador guardado')),
+        );
+      }
+    } catch (error) {
+      await _store.save(widget.conteoId, _items);
+      if (!mounted) return;
+      setState(() {
+        _pendingSync = true;
+        _syncStatus = 'Guardado local - sin conexion';
+      });
+      if (!silent) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Guardado local. Sincronice luego. $error')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _autosaving = false);
+      }
     }
   }
 
@@ -140,7 +208,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
         _buscar.clear();
         _resultados = [];
       });
-      await _store.save(widget.conteoId, _items);
+      await _guardarLocalYProgramarSync();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Cantidad actualizada: ${producto.codigo}')),
@@ -156,7 +224,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
       _buscar.clear();
       _resultados = [];
     });
-    await _store.save(widget.conteoId, _items);
+    await _guardarLocalYProgramarSync();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Producto agregado: ${producto.codigo}')),
@@ -253,7 +321,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
     setState(() {
       _items.removeWhere((current) => current.productoId == item.productoId);
     });
-    await _store.save(widget.conteoId, _items);
+    await _guardarLocalYProgramarSync();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Producto eliminado: ${item.codigo}')),
@@ -269,7 +337,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
     setState(() {
       item.cantidad = cantidad;
     });
-    await _store.save(widget.conteoId, _items);
+    await _guardarLocalYProgramarSync();
   }
 
   double get _totalUnidades {
@@ -284,23 +352,9 @@ class _ConteoScreenState extends State<ConteoScreen> {
       return;
     }
     setState(() => _saving = true);
-    try {
-      await widget.api.guardarBorrador(widget.conteoId, _items);
-      await _store.save(widget.conteoId, _items);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Borrador guardado')),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Guardado local. Sincronice luego. $error')),
-      );
-      await _store.save(widget.conteoId, _items);
-    } finally {
-      if (mounted) {
-        setState(() => _saving = false);
-      }
+    await _sincronizarBorrador();
+    if (mounted) {
+      setState(() => _saving = false);
     }
   }
 
@@ -321,6 +375,8 @@ class _ConteoScreenState extends State<ConteoScreen> {
 
     setState(() => _saving = true);
     try {
+      _autosaveDebounce?.cancel();
+      await _sincronizarBorrador(silent: true);
       await widget.api.finalizarConteo(widget.conteoId, _items);
       await _store.clear(widget.conteoId);
       if (!mounted) return;
@@ -454,6 +510,30 @@ class _ConteoScreenState extends State<ConteoScreen> {
                 Text(
                   'Unidades: ${_formatCantidad(_totalUnidades)}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF4E6380)),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    if (_autosaving)
+                      const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    else
+                      Icon(
+                        _pendingSync ? Icons.cloud_off_outlined : Icons.cloud_done_outlined,
+                        size: 16,
+                        color: _pendingSync ? const Color(0xFF946200) : const Color(0xFF087443),
+                      ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _syncStatus,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF4E6380)),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 if (_items.isEmpty)

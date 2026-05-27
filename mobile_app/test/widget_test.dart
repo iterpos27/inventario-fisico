@@ -8,7 +8,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
-    await tester.pumpWidget(ConteoApp(api: ApiClient(prefs)));
+    await tester.pumpWidget(ConteoApp(api: ApiClient(prefs, initialToken: '')));
 
     expect(find.text('Centro del Ruliman'), findsOneWidget);
     expect(find.text('Ingresar'), findsOneWidget);

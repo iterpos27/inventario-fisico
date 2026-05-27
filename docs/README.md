@@ -47,8 +47,8 @@ http://localhost/centro_ruliman_inventario/public
 
 ## Usuario inicial
 
-- Usuario: `admin`
-- Contrasena: `admin123`
+El primer administrador debe crearse desde el sistema o configurando
+`APP_SEED_ADMIN_USER` y `APP_SEED_ADMIN_PASSWORD` en `.env`.
 
 ## Configuracion de base de datos
 
@@ -57,8 +57,8 @@ Editar `config/database.php` si el servidor MySQL usa otro usuario, clave, host 
 ```php
 $dbHost = 'localhost';
 $dbName = 'centro_ruliman_inventario';
-$dbUser = 'root';
-$dbPass = '';
+$dbUser = 'inventario_app';
+$dbPass = 'cambie_esta_clave';
 ```
 
 Si MySQL corre en otro puerto, usar este formato:

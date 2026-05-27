@@ -191,10 +191,14 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
             <div class="section-title"><h2>Conteos disponibles</h2></div>
             <div class="count-list">
                 <?php foreach ($tomasDisponibles as $disponible): ?>
-                    <a class="available-count" href="<?= action_url('iniciar_conteo') ?>?toma_id=<?= (int) $disponible['toma_id'] ?>">
+                    <form method="post" action="<?= action_url('iniciar_conteo') ?>">
+                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                        <input type="hidden" name="toma_id" value="<?= (int) $disponible['toma_id'] ?>">
+                        <button class="available-count" type="submit">
                         <span><?= nl2br(e($disponible['nombre_toma'])) ?></span>
                         <small><?= (int) $disponible['lineas'] ?> lineas registradas - <?= $disponible['conteo_estado'] === 'borrador' ? 'Continuar' : 'Empezar' ?></small>
-                    </a>
+                        </button>
+                    </form>
                 <?php endforeach; ?>
                 <?php if (!$tomasDisponibles): ?>
                     <div class="empty-state">No hay conteos disponibles. Solicite al administrador crear una toma fisica.</div>

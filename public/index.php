@@ -109,9 +109,11 @@ if ($action !== '') {
     exit;
 }
 
-$page = (string) ($_GET['page'] ?? '');
-if ($page === '' && $route !== '' && $route !== 'index.php') {
+$page = '';
+if ($route !== '' && $route !== 'index.php') {
     $page = basename($route, '.php');
+} else {
+    $page = (string) ($_GET['page'] ?? '');
 }
 if ($page === '') {
     $page = is_logged_in() ? (current_user_role() === 'admin' ? 'dashboard' : 'conteo') : 'login';

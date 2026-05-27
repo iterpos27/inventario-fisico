@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,16 +9,35 @@ import '../models/producto.dart';
 import '../models/toma.dart';
 
 class ApiClient {
-  ApiClient(this._prefs);
+  ApiClient(
+    this._prefs, {
+    FlutterSecureStorage? secureStorage,
+    String? initialToken,
+  })  : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+        _token = initialToken;
 
   static const _baseUrlKey = 'api_base_url';
   static const _tokenKey = 'api_token';
 
   final SharedPreferences _prefs;
+  final FlutterSecureStorage _secureStorage;
+  String? _token;
 
-  String get baseUrl => _prefs.getString(_baseUrlKey) ?? 'http://10.0.2.2/centro_ruliman_inventario';
-  String? get token => _prefs.getString(_tokenKey);
+  String get baseUrl => _prefs.getString(_baseUrlKey) ?? 'https://10.0.2.2/centro_ruliman_inventario';
+  String? get token => _token;
   bool get hasToken => token != null && token!.isNotEmpty;
+
+  Future<void> loadToken() async {
+    _token = await _secureStorage.read(key: _tokenKey);
+    if (!hasToken) {
+      final legacyToken = _prefs.getString(_tokenKey);
+      if (legacyToken != null && legacyToken.isNotEmpty) {
+        _token = legacyToken;
+        await _secureStorage.write(key: _tokenKey, value: legacyToken);
+        await _prefs.remove(_tokenKey);
+      }
+    }
+  }
 
   Future<void> setBaseUrl(String value) async {
     await _prefs.setString(_baseUrlKey, value.replaceAll(RegExp(r'/+$'), ''));
@@ -34,7 +54,9 @@ class ApiClient {
       'password': password,
       'device': 'Flutter Android',
     }, authenticated: false);
-    await _prefs.setString(_tokenKey, '${data['token']}');
+    _token = '${data['token']}';
+    await _secureStorage.write(key: _tokenKey, value: _token);
+    await _prefs.remove(_tokenKey);
   }
 
   Future<void> logout() async {
@@ -45,6 +67,8 @@ class ApiClient {
         // La salida local debe funcionar aunque el servidor no responda.
       }
     }
+    _token = null;
+    await _secureStorage.delete(key: _tokenKey);
     await _prefs.remove(_tokenKey);
   }
 

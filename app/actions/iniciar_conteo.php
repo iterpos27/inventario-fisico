@@ -3,12 +3,17 @@ require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 require_login();
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?? null)) {
+    header('Location: ' . page_url('conteo'));
+    exit;
+}
+
 if (current_user_role() === 'admin') {
     header('Location: ' . page_url('conteo'));
     exit;
 }
 
-$tomaId = (int) ($_GET['toma_id'] ?? 0);
+$tomaId = (int) ($_POST['toma_id'] ?? 0);
 if ($tomaId <= 0) {
     header('Location: ' . page_url('conteo'));
     exit;

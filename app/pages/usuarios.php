@@ -60,7 +60,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
                     <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <div class="mb-3"><label class="form-label">Nombre</label><input class="form-control" name="nombre" required></div>
                     <div class="mb-3"><label class="form-label">Usuario</label><input class="form-control" name="usuario" required></div>
-                    <div class="mb-3"><label class="form-label">Contrasena</label><input class="form-control" type="password" name="password" required minlength="6"></div>
+                    <div class="mb-3"><label class="form-label">Contrasena</label><input class="form-control" type="password" name="password" required minlength="10"></div>
                     <div><label class="form-label">Rol</label><select class="form-select" name="rol"><option value="usuario">Usuario</option><option value="admin">Admin</option></select></div>
                 </div>
                 <div class="modal-footer">
@@ -86,7 +86,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
                     <input type="hidden" name="id" value="<?= (int) $usuario['id'] ?>">
                     <div class="mb-3"><label class="form-label">Nombre</label><input class="form-control" name="nombre" value="<?= e($usuario['nombre']) ?>" required></div>
                     <div class="mb-3"><label class="form-label">Usuario</label><input class="form-control" name="usuario" value="<?= e($usuario['usuario']) ?>" required></div>
-                    <div class="mb-3"><label class="form-label">Clave nueva</label><input class="form-control" type="password" name="password" minlength="6" placeholder="Dejar vacio para no cambiar"></div>
+                    <div class="mb-3"><label class="form-label">Clave nueva</label><input class="form-control" type="password" name="password" minlength="10" placeholder="Dejar vacio para no cambiar"></div>
                     <div class="row g-3">
                         <div class="col-6">
                             <label class="form-label">Rol</label>

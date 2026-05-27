@@ -95,12 +95,5 @@ CREATE TABLE IF NOT EXISTS conteo_detalle (
   INDEX idx_detalle_codigo (codigo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO usuarios (nombre, usuario, password, rol, estado)
-VALUES (
-  'Administrador',
-  'admin',
-  '$2y$10$fqF1pDCz79WKhYMwU8rsneZN.HEboXW0Whd8hxfoKGVQlx/eESn0q',
-  'admin',
-  1
-)
-ON DUPLICATE KEY UPDATE usuario = usuario;
+-- Cree el primer administrador desde el sistema o con las variables
+-- APP_SEED_ADMIN_USER y APP_SEED_ADMIN_PASSWORD del archivo .env.
