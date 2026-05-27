@@ -3,6 +3,11 @@ require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 require_login();
 
+if (current_user_role() === 'admin') {
+    header('Location: ' . page_url('reportes'));
+    exit;
+}
+
 $estado = $_GET['estado'] ?? '';
 $params = [];
 $sql = "SELECT c.id, c.nombre_conteo, c.estado, c.fecha_inicio, c.fecha_finalizacion, c.archivo_excel, u.nombre
@@ -25,15 +30,15 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $conteos = $stmt->fetchAll();
 
-$pageTitle = (current_user_role() === 'admin' ? 'Conteos individuales' : 'Historial de conteos') . ' - ' . APP_NAME;
+$pageTitle = 'Historial de conteos - ' . APP_NAME;
 require_once APP_INCLUDES_PATH . '/header.php';
 require_once APP_INCLUDES_PATH . '/navbar.php';
 ?>
 <main class="container py-4">
     <div class="page-heading">
         <div>
-            <p class="eyebrow"><?= current_user_role() === 'admin' ? 'Reportes' : 'Conteo y borradores' ?></p>
-            <h1><?= current_user_role() === 'admin' ? 'Conteos individuales' : ($estado === 'borrador' ? 'Borradores' : 'Historial de conteos') ?></h1>
+            <p class="eyebrow">Conteo y borradores</p>
+            <h1><?= $estado === 'borrador' ? 'Borradores' : 'Historial de conteos' ?></h1>
         </div>
     </div>
     <form class="filter-tabs mb-3" method="get" action="<?= page_url('historial_conteos') ?>">
@@ -42,7 +47,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
         <button class="btn <?= $estado === 'finalizado' ? 'btn-primary' : 'btn-outline-primary' ?>" name="estado" value="finalizado" type="submit">Finalizados</button>
     </form>
     <section class="content-panel">
-        <div class="section-title"><h2>Conteos individuales</h2></div>
+        <div class="section-title"><h2>Mis conteos</h2></div>
         <div class="table-responsive">
             <table class="table align-middle">
                 <thead><tr><th>Conteo</th><th>Usuario</th><th>Estado</th><th>Inicio</th><th>Fin</th><th>Excel</th></tr></thead>
