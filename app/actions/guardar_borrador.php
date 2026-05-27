@@ -2,6 +2,7 @@
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 require_once APP_INCLUDES_PATH . '/conteo_items.php';
+require_once APP_INCLUDES_PATH . '/toma_window.php';
 require_once APP_PATH . '/repositories/ConteoRepository.php';
 require_login();
 
@@ -38,9 +39,11 @@ try {
     $pdo->beginTransaction();
 
     $conteos = new ConteoRepository($pdo);
-    if (!$conteos->findActiveDraftForUser($conteoId, (int) $_SESSION['usuario_id'], true)) {
+    $conteo = $conteos->findActiveDraftForUser($conteoId, (int) $_SESSION['usuario_id'], true);
+    if (!$conteo) {
         throw new RuntimeException('Conteo no disponible');
     }
+    validar_ventana_toma($conteo);
     if (reemplazar_detalle_conteo($pdo, $conteoId, $items) === 0) {
         throw new RuntimeException('Sin productos validos');
     }

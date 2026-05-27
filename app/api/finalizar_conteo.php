@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+require_once APP_INCLUDES_PATH . '/toma_window.php';
 require_once APP_PATH . '/repositories/ConteoRepository.php';
 
 $user = api_require_user($pdo);
@@ -19,6 +20,7 @@ try {
     if (!$conteo) {
         throw new RuntimeException('Conteo no disponible');
     }
+    validar_ventana_toma($conteo);
     $tomaId = (int) $conteo['toma_id'];
     if (!$conteos->lockToma($tomaId)) {
         throw new RuntimeException('Toma no disponible');
@@ -43,5 +45,5 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    api_json(['ok' => false, 'message' => 'No se pudo finalizar el conteo'], 500);
+    api_json(['ok' => false, 'message' => $exception->getMessage()], 422);
 }

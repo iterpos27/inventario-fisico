@@ -12,7 +12,7 @@ final class ConteoRepository
     {
         $lockSql = $lock ? ' FOR UPDATE' : '';
         $stmt = $this->pdo->prepare(
-            "SELECT c.id, c.toma_id
+            "SELECT c.id, c.toma_id, t.fecha_habilitacion, t.fecha_cierre, t.hora_inicio, t.hora_fin
              FROM conteos c
              INNER JOIN tomas_fisicas t ON t.id = c.toma_id
              WHERE c.id = ? AND c.usuario_id = ? AND c.estado = 'borrador' AND t.estado = 'abierta'

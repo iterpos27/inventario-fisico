@@ -1,6 +1,7 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
+require_once APP_INCLUDES_PATH . '/toma_window.php';
 require_login();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?? null)) {
@@ -23,7 +24,7 @@ try {
     $pdo->beginTransaction();
 
     $stmt = $pdo->prepare(
-        "SELECT t.id, t.nombre_toma
+        "SELECT t.id, t.nombre_toma, t.fecha_habilitacion, t.fecha_cierre, t.hora_inicio, t.hora_fin
          FROM tomas_fisicas t
          INNER JOIN toma_usuarios tu ON tu.toma_id = t.id
          WHERE t.id = ? AND tu.usuario_id = ? AND t.estado = 'abierta'"
@@ -34,6 +35,7 @@ try {
     if (!$toma) {
         throw new RuntimeException('Toma no disponible');
     }
+    validar_ventana_toma($toma);
 
     $stmt = $pdo->prepare('SELECT id FROM conteos WHERE toma_id = ? AND usuario_id = ? LIMIT 1');
     $stmt->execute([$tomaId, (int) $_SESSION['usuario_id']]);
@@ -57,7 +59,7 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    header('Location: ' . page_url('conteo'));
+    header('Location: ' . page_url('conteo', ['error' => $exception->getMessage()]));
 }
 exit;
 

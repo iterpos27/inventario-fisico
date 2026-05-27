@@ -25,15 +25,16 @@ $tomas = [];
 if (current_user_role() === 'admin') {
     $stmt = $pdo->query(
         "SELECT t.id, t.nombre_toma, t.estado, t.fecha_creacion, t.fecha_finalizacion, t.archivo_excel,
-                COUNT(DISTINCT tu.id) AS asignados,
-                COUNT(DISTINCT CASE WHEN tu.estado = 'finalizado' THEN tu.id END) AS finalizados,
-                COUNT(DISTINCT c.id) AS conteos_creados,
-                COUNT(DISTINCT CASE WHEN d.id IS NOT NULL THEN c.id END) AS conteos_con_detalle
+                (SELECT COUNT(*) FROM toma_usuarios tu WHERE tu.toma_id = t.id) AS asignados,
+                (SELECT COUNT(*) FROM toma_usuarios tu WHERE tu.toma_id = t.id AND tu.estado = 'finalizado') AS finalizados,
+                (SELECT COUNT(*) FROM conteos c WHERE c.toma_id = t.id) AS conteos_creados,
+                (
+                    SELECT COUNT(DISTINCT c.id)
+                    FROM conteos c
+                    INNER JOIN conteo_detalle d ON d.conteo_id = c.id
+                    WHERE c.toma_id = t.id
+                ) AS conteos_con_detalle
          FROM tomas_fisicas t
-         LEFT JOIN toma_usuarios tu ON tu.toma_id = t.id
-         LEFT JOIN conteos c ON c.toma_id = t.id
-         LEFT JOIN conteo_detalle d ON d.conteo_id = c.id
-         GROUP BY t.id, t.nombre_toma, t.estado, t.fecha_creacion, t.fecha_finalizacion
          ORDER BY t.id DESC"
     );
     $tomas = $stmt->fetchAll();

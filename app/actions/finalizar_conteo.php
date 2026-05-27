@@ -3,6 +3,7 @@ require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 require_once APP_INCLUDES_PATH . '/conteo_items.php';
 require_once APP_INCLUDES_PATH . '/excel_exports.php';
+require_once APP_INCLUDES_PATH . '/toma_window.php';
 require_once APP_PATH . '/repositories/ConteoRepository.php';
 require_login();
 
@@ -43,6 +44,7 @@ try {
     if (!$conteoActivo) {
         throw new RuntimeException('Conteo no disponible');
     }
+    validar_ventana_toma($conteoActivo);
     $tomaId = (int) $conteoActivo['toma_id'];
     if (!$conteos->lockToma($tomaId)) {
         throw new RuntimeException('Toma no disponible');

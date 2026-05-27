@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+require_once APP_INCLUDES_PATH . '/toma_window.php';
 require_once APP_PATH . '/repositories/ConteoRepository.php';
 
 $user = api_require_user($pdo);
@@ -15,9 +16,11 @@ try {
     $pdo->beginTransaction();
 
     $conteos = new ConteoRepository($pdo);
-    if (!$conteos->findActiveDraftForUser($conteoId, (int) $user['id'], true)) {
+    $conteo = $conteos->findActiveDraftForUser($conteoId, (int) $user['id'], true);
+    if (!$conteo) {
         throw new RuntimeException('Conteo no disponible');
     }
+    validar_ventana_toma($conteo);
 
     $lineas = reemplazar_detalle_conteo($pdo, $conteoId, $items);
     if ($lineas === 0) {
@@ -30,5 +33,5 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    api_json(['ok' => false, 'message' => 'No se pudo guardar el borrador'], 500);
+    api_json(['ok' => false, 'message' => $exception->getMessage()], 422);
 }
