@@ -2,27 +2,44 @@
 
 declare(strict_types=1);
 
-function reemplazar_detalle_conteo(PDO $pdo, int $conteoId, array $items): int
+require_once APP_PATH . '/repositories/ProductRepository.php';
+
+const CONTEO_MAX_CANTIDAD = 999999.99;
+const CONTEO_DECIMALES = 2;
+
+/**
+ * @return array<int, float>
+ */
+function normalizar_items_conteo(array $items): array
 {
     $cantidades = [];
     foreach ($items as $item) {
-        $productoId = (int) ($item['producto_id'] ?? 0);
-        $cantidad = (float) ($item['cantidad'] ?? 0);
-        if ($productoId <= 0 || $cantidad < 0) {
+        if (!is_array($item)) {
             continue;
         }
-        $cantidades[$productoId] = $cantidad;
+
+        $productoId = (int) ($item['producto_id'] ?? 0);
+        $cantidad = filter_var($item['cantidad'] ?? 0, FILTER_VALIDATE_FLOAT);
+        if ($productoId <= 0 || $cantidad === false || $cantidad < 0 || $cantidad > CONTEO_MAX_CANTIDAD) {
+            continue;
+        }
+
+        $cantidades[$productoId] = round((float) $cantidad, CONTEO_DECIMALES);
     }
+
+    return $cantidades;
+}
+
+function reemplazar_detalle_conteo(PDO $pdo, int $conteoId, array $items): int
+{
+    $cantidades = normalizar_items_conteo($items);
 
     $pdo->prepare('DELETE FROM conteo_detalle WHERE conteo_id = ?')->execute([$conteoId]);
     if (!$cantidades) {
         return 0;
     }
 
-    $placeholders = implode(',', array_fill(0, count($cantidades), '?'));
-    $stmt = $pdo->prepare("SELECT id, codigo, descripcion FROM productos WHERE estado = 1 AND id IN ({$placeholders})");
-    $stmt->execute(array_keys($cantidades));
-    $productos = $stmt->fetchAll();
+    $productos = (new ProductRepository($pdo))->findActiveByIds(array_keys($cantidades));
     if (!$productos) {
         return 0;
     }

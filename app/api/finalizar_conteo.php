@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+require_once APP_PATH . '/repositories/ConteoRepository.php';
 
 $user = api_require_user($pdo);
 $payload = api_payload();
@@ -13,16 +14,14 @@ if ($conteoId <= 0 || !is_array($items) || count($items) === 0) {
 try {
     $pdo->beginTransaction();
 
-    $stmt = $pdo->prepare(
-        "SELECT c.id, c.toma_id
-         FROM conteos c
-         INNER JOIN tomas_fisicas t ON t.id = c.toma_id
-         WHERE c.id = ? AND c.usuario_id = ? AND c.estado = 'borrador' AND t.estado = 'abierta'"
-    );
-    $stmt->execute([$conteoId, (int) $user['id']]);
-    $conteo = $stmt->fetch();
+    $conteos = new ConteoRepository($pdo);
+    $conteo = $conteos->findActiveDraftForUser($conteoId, (int) $user['id'], true);
     if (!$conteo) {
         throw new RuntimeException('Conteo no disponible');
+    }
+    $tomaId = (int) $conteo['toma_id'];
+    if (!$conteos->lockToma($tomaId)) {
+        throw new RuntimeException('Toma no disponible');
     }
 
     if (reemplazar_detalle_conteo($pdo, $conteoId, $items) === 0) {
@@ -30,25 +29,9 @@ try {
     }
 
     $archivoExcel = generar_excel_conteo($pdo, $conteoId);
-    $stmt = $pdo->prepare("UPDATE conteos SET estado = 'finalizado', fecha_finalizacion = NOW(), archivo_excel = ? WHERE id = ?");
-    $stmt->execute([$archivoExcel, $conteoId]);
-
-    $tomaId = (int) $conteo['toma_id'];
-    $stmt = $pdo->prepare("UPDATE toma_usuarios SET estado = 'finalizado' WHERE toma_id = ? AND usuario_id = ?");
-    $stmt->execute([$tomaId, (int) $user['id']]);
-
-    $stmt = $pdo->prepare(
-        "SELECT COUNT(*) AS asignados,
-                SUM(CASE WHEN estado = 'finalizado' THEN 1 ELSE 0 END) AS finalizados
-         FROM toma_usuarios
-         WHERE toma_id = ?"
-    );
-    $stmt->execute([$tomaId]);
-    $avance = $stmt->fetch();
-    if ($avance && (int) $avance['asignados'] > 0 && (int) $avance['asignados'] === (int) $avance['finalizados']) {
-        $stmt = $pdo->prepare("UPDATE tomas_fisicas SET estado = 'finalizada', fecha_finalizacion = NOW() WHERE id = ?");
-        $stmt->execute([$tomaId]);
-    }
+    $conteos->finalizarConteo($conteoId, $archivoExcel);
+    $conteos->finalizarAsignacion($tomaId, (int) $user['id']);
+    $conteos->cerrarTomaSiCompleta($tomaId);
 
     $pdo->commit();
     api_json([

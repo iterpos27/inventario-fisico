@@ -1,6 +1,7 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
+require_once APP_PATH . '/repositories/ProductRepository.php';
 require_admin();
 
 $productosJsVersion = file_exists(PUBLIC_PATH . '/assets/js/productos.js')
@@ -24,42 +25,13 @@ $excelReady = $phpspreadsheetReady && $missingPhpExtensions === [];
 $q = trim((string) ($_GET['q'] ?? ''));
 $page = max(1, (int) ($_GET['page'] ?? 1));
 $perPage = 20;
-$offset = ($page - 1) * $perPage;
-$where = 'estado = 1';
-$params = [];
-
-if ($q !== '') {
-    $where .= ' AND (codigo LIKE :q_codigo OR descripcion LIKE :q_descripcion)';
-    $params[':q_codigo'] = "%{$q}%";
-    $params[':q_descripcion'] = "%{$q}%";
-}
-
-$countStmt = $pdo->prepare("SELECT COUNT(*) FROM productos WHERE {$where}");
-foreach ($params as $key => $value) {
-    $countStmt->bindValue($key, $value);
-}
-$countStmt->execute();
-$totalProductos = (int) $countStmt->fetchColumn();
+$productosPage = (new ProductRepository($pdo))->paginateActive($q, $page, $perPage);
+$productos = $productosPage['items'];
+$totalProductos = $productosPage['total'];
 $totalPages = max(1, (int) ceil($totalProductos / $perPage));
 if ($page > $totalPages) {
     $page = $totalPages;
-    $offset = ($page - 1) * $perPage;
 }
-
-$productosStmt = $pdo->prepare(
-    "SELECT id, codigo, descripcion
-     FROM productos
-     WHERE {$where}
-     ORDER BY descripcion, codigo
-     LIMIT :limit OFFSET :offset"
-);
-foreach ($params as $key => $value) {
-    $productosStmt->bindValue($key, $value);
-}
-$productosStmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
-$productosStmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-$productosStmt->execute();
-$productos = $productosStmt->fetchAll();
 
 $queryBase = [];
 if ($q !== '') {

@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS productos (
   estado TINYINT(1) NOT NULL DEFAULT 1,
   fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_productos_descripcion (descripcion),
-  INDEX idx_productos_estado (estado)
+  INDEX idx_productos_estado (estado),
+  INDEX idx_productos_estado_descripcion (estado, descripcion)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS agencias (
@@ -61,7 +62,8 @@ CREATE TABLE IF NOT EXISTS toma_usuarios (
   CONSTRAINT fk_toma_usuarios_toma FOREIGN KEY (toma_id) REFERENCES tomas_fisicas(id) ON DELETE CASCADE,
   CONSTRAINT fk_toma_usuarios_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
   UNIQUE KEY uq_toma_usuario (toma_id, usuario_id),
-  INDEX idx_toma_usuarios_estado (estado)
+  INDEX idx_toma_usuarios_estado (estado),
+  INDEX idx_toma_usuarios_usuario_estado (usuario_id, estado)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS conteos (
@@ -78,6 +80,7 @@ CREATE TABLE IF NOT EXISTS conteos (
   INDEX idx_conteos_estado (estado),
   INDEX idx_conteos_toma (toma_id),
   INDEX idx_conteos_usuario (usuario_id),
+  INDEX idx_conteos_usuario_estado (usuario_id, estado),
   UNIQUE KEY uq_conteo_toma_usuario (toma_id, usuario_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -92,7 +95,8 @@ CREATE TABLE IF NOT EXISTS conteo_detalle (
   CONSTRAINT fk_detalle_conteo FOREIGN KEY (conteo_id) REFERENCES conteos(id) ON DELETE CASCADE,
   CONSTRAINT fk_detalle_producto FOREIGN KEY (producto_id) REFERENCES productos(id),
   UNIQUE KEY uq_conteo_producto (conteo_id, producto_id),
-  INDEX idx_detalle_codigo (codigo)
+  INDEX idx_detalle_codigo (codigo),
+  INDEX idx_detalle_producto (producto_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Cree el primer administrador desde el sistema o con las variables

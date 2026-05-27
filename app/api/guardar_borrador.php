@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+require_once APP_PATH . '/repositories/ConteoRepository.php';
 
 $user = api_require_user($pdo);
 $payload = api_payload();
@@ -13,14 +14,8 @@ if ($conteoId <= 0 || !is_array($items) || count($items) === 0) {
 try {
     $pdo->beginTransaction();
 
-    $stmt = $pdo->prepare(
-        "SELECT c.id
-         FROM conteos c
-         INNER JOIN tomas_fisicas t ON t.id = c.toma_id
-         WHERE c.id = ? AND c.usuario_id = ? AND c.estado = 'borrador' AND t.estado = 'abierta'"
-    );
-    $stmt->execute([$conteoId, (int) $user['id']]);
-    if (!$stmt->fetch()) {
+    $conteos = new ConteoRepository($pdo);
+    if (!$conteos->findActiveDraftForUser($conteoId, (int) $user['id'], true)) {
         throw new RuntimeException('Conteo no disponible');
     }
 

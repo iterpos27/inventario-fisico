@@ -39,7 +39,8 @@ function ensure_schema(PDO $pdo): void
             estado TINYINT(1) NOT NULL DEFAULT 1,
             fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_productos_descripcion (descripcion),
-            INDEX idx_productos_estado (estado)
+            INDEX idx_productos_estado (estado),
+            INDEX idx_productos_estado_descripcion (estado, descripcion)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
 
@@ -90,6 +91,7 @@ function ensure_schema(PDO $pdo): void
             INDEX idx_conteos_estado (estado),
             INDEX idx_conteos_toma (toma_id),
             INDEX idx_conteos_usuario (usuario_id),
+            INDEX idx_conteos_usuario_estado (usuario_id, estado),
             UNIQUE KEY uq_conteo_toma_usuario (toma_id, usuario_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
@@ -106,7 +108,8 @@ function ensure_schema(PDO $pdo): void
             CONSTRAINT fk_detalle_conteo FOREIGN KEY (conteo_id) REFERENCES conteos(id) ON DELETE CASCADE,
             CONSTRAINT fk_detalle_producto FOREIGN KEY (producto_id) REFERENCES productos(id),
             UNIQUE KEY uq_conteo_producto (conteo_id, producto_id),
-            INDEX idx_detalle_codigo (codigo)
+            INDEX idx_detalle_codigo (codigo),
+            INDEX idx_detalle_producto (producto_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
 
@@ -120,7 +123,8 @@ function ensure_schema(PDO $pdo): void
             CONSTRAINT fk_toma_usuarios_toma FOREIGN KEY (toma_id) REFERENCES tomas_fisicas(id) ON DELETE CASCADE,
             CONSTRAINT fk_toma_usuarios_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
             UNIQUE KEY uq_toma_usuario (toma_id, usuario_id),
-            INDEX idx_toma_usuarios_estado (estado)
+            INDEX idx_toma_usuarios_estado (estado),
+            INDEX idx_toma_usuarios_usuario_estado (usuario_id, estado)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
 
@@ -174,6 +178,19 @@ function ensure_schema(PDO $pdo): void
         $pdo->exec('ALTER TABLE conteos ADD INDEX idx_conteos_toma (toma_id)');
     } catch (Throwable $exception) {
         // El indice ya puede existir en instalaciones actualizadas.
+    }
+
+    foreach ([
+        'ALTER TABLE productos ADD INDEX idx_productos_estado_descripcion (estado, descripcion)',
+        'ALTER TABLE conteos ADD INDEX idx_conteos_usuario_estado (usuario_id, estado)',
+        'ALTER TABLE conteo_detalle ADD INDEX idx_detalle_producto (producto_id)',
+        'ALTER TABLE toma_usuarios ADD INDEX idx_toma_usuarios_usuario_estado (usuario_id, estado)',
+    ] as $indexSql) {
+        try {
+            $pdo->exec($indexSql);
+        } catch (Throwable $exception) {
+            // El indice ya puede existir en instalaciones actualizadas.
+        }
     }
 
     try {

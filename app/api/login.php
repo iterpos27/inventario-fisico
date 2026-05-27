@@ -22,7 +22,7 @@ if ($attempt && !empty($attempt['bloqueado_hasta']) && strtotime((string) $attem
     api_json(['ok' => false, 'message' => 'Demasiados intentos. Espere 15 minutos.'], 429);
 }
 
-$stmt = $pdo->prepare('SELECT * FROM usuarios WHERE usuario = ? AND estado = 1 LIMIT 1');
+$stmt = $pdo->prepare('SELECT id, nombre, usuario, password, rol FROM usuarios WHERE usuario = ? AND estado = 1 LIMIT 1');
 $stmt->execute([$usuario]);
 $user = $stmt->fetch();
 $validPassword = $user && password_verify($password, $user['password']);

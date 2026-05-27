@@ -3,6 +3,7 @@ require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 require_once APP_INCLUDES_PATH . '/conteo_items.php';
 require_once APP_INCLUDES_PATH . '/excel_exports.php';
+require_once APP_PATH . '/repositories/ConteoRepository.php';
 require_login();
 
 header('Content-Type: application/json; charset=utf-8');
@@ -37,42 +38,24 @@ if ($conteoId <= 0) {
 try {
     $pdo->beginTransaction();
 
-    $stmt = $pdo->prepare(
-        "SELECT c.id, c.toma_id
-         FROM conteos c
-         INNER JOIN tomas_fisicas t ON t.id = c.toma_id
-         WHERE c.id = ? AND c.usuario_id = ? AND c.estado = 'borrador' AND t.estado = 'abierta'"
-    );
-    $stmt->execute([$conteoId, (int) $_SESSION['usuario_id']]);
-    $conteoActivo = $stmt->fetch();
+    $conteos = new ConteoRepository($pdo);
+    $conteoActivo = $conteos->findActiveDraftForUser($conteoId, (int) $_SESSION['usuario_id'], true);
     if (!$conteoActivo) {
         throw new RuntimeException('Conteo no disponible');
     }
     $tomaId = (int) $conteoActivo['toma_id'];
+    if (!$conteos->lockToma($tomaId)) {
+        throw new RuntimeException('Toma no disponible');
+    }
     if (reemplazar_detalle_conteo($pdo, $conteoId, $items) === 0) {
         throw new RuntimeException('Sin productos validos');
     }
 
     $relativePath = generar_excel_conteo($pdo, $conteoId);
 
-    $stmt = $pdo->prepare("UPDATE conteos SET estado = 'finalizado', fecha_finalizacion = NOW(), archivo_excel = ? WHERE id = ?");
-    $stmt->execute([$relativePath, $conteoId]);
-
-    $stmt = $pdo->prepare("UPDATE toma_usuarios SET estado = 'finalizado' WHERE toma_id = ? AND usuario_id = ?");
-    $stmt->execute([$tomaId, (int) $_SESSION['usuario_id']]);
-
-    $stmt = $pdo->prepare(
-        "SELECT COUNT(*) AS asignados,
-                SUM(CASE WHEN estado = 'finalizado' THEN 1 ELSE 0 END) AS finalizados
-         FROM toma_usuarios
-         WHERE toma_id = ?"
-    );
-    $stmt->execute([$tomaId]);
-    $avance = $stmt->fetch();
-    if ($avance && (int) $avance['asignados'] > 0 && (int) $avance['asignados'] === (int) $avance['finalizados']) {
-        $stmt = $pdo->prepare("UPDATE tomas_fisicas SET estado = 'finalizada', fecha_finalizacion = NOW() WHERE id = ?");
-        $stmt->execute([$tomaId]);
-    }
+    $conteos->finalizarConteo($conteoId, $relativePath);
+    $conteos->finalizarAsignacion($tomaId, (int) $_SESSION['usuario_id']);
+    $conteos->cerrarTomaSiCompleta($tomaId);
 
     $pdo->commit();
     echo json_encode([
