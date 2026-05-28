@@ -107,13 +107,21 @@ async function buscarProductos(q) {
 }
 
 function focusQuantity(productId) {
-  requestAnimationFrame(() => {
+  const focusInput = () => {
     const input = document.querySelector(`[data-edit="${productId}"]`);
-    if (!input) return;
-    input.focus();
-    input.select();
+    if (!(input instanceof HTMLInputElement)) return;
+    input.focus({ preventScroll: true });
+    try {
+      input.select();
+    } catch (error) {
+      input.setSelectionRange?.(0, input.value.length);
+    }
     input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
+  };
+
+  focusInput();
+  requestAnimationFrame(focusInput);
+  setTimeout(focusInput, 80);
 }
 
 function addProductLine(product) {
