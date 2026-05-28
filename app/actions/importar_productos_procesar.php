@@ -1,6 +1,7 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
+require_once APP_INCLUDES_PATH . '/product_codes.php';
 require_admin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?? null)) {
@@ -85,7 +86,7 @@ try {
     $procesados = 0;
     $pdo->beginTransaction();
     foreach (array_slice($rows, 1) as $row) {
-        $codigo = trim((string) ($row[$codigoCol] ?? ''));
+        $codigo = normalizar_codigo_producto($row[$codigoCol] ?? '');
         $descripcion = trim((string) ($row[$descripcionCol] ?? ''));
         if ($codigo === '' || $descripcion === '') {
             continue;

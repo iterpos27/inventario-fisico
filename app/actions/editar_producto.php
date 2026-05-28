@@ -1,6 +1,7 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
+require_once APP_INCLUDES_PATH . '/product_codes.php';
 require_admin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?? null)) {
@@ -9,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?
 }
 
 $id = (int) ($_POST['id'] ?? 0);
-$codigo = trim((string) ($_POST['codigo'] ?? ''));
+$codigo = normalizar_codigo_producto($_POST['codigo'] ?? '');
 $descripcion = trim((string) ($_POST['descripcion'] ?? ''));
 
 if ($id <= 0 || $codigo === '' || $descripcion === '') {
