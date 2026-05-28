@@ -2245,15 +2245,15 @@ body {
 
 @media (max-width: 767.98px) {
   .app-role-usuario .count-item {
-    grid-template-columns: 42px minmax(0, 1fr) 96px;
+    grid-template-columns: 38px minmax(0, 1fr) 82px;
     align-items: center;
-    gap: 8px;
-    padding: 12px;
+    gap: 7px;
+    padding: 9px 10px;
   }
 
   .app-role-usuario .count-item-delete {
-    width: 42px;
-    height: 42px;
+    width: 36px;
+    height: 36px;
     padding: 0;
     grid-row: auto;
   }
@@ -2265,18 +2265,19 @@ body {
   .app-role-usuario .count-item-main .product-code {
     width: max-content;
     max-width: 100%;
-    padding: 4px 8px;
+    padding: 2px 7px;
     border: 1px solid var(--line);
     border-radius: 6px;
     background: #edf5ff;
     color: var(--accent);
-    font-size: 0.86rem;
+    font-size: 0.76rem;
+    line-height: 1.2;
   }
 
   .app-role-usuario .count-item-main strong {
-    margin-top: 6px;
-    font-size: 0.95rem;
-    line-height: 1.35;
+    margin-top: 4px;
+    font-size: 0.82rem;
+    line-height: 1.25;
   }
 
   .app-role-usuario .count-item-actions {
@@ -2285,7 +2286,8 @@ body {
   }
 
   .app-role-usuario .count-item-actions input {
-    min-height: 48px;
-    font-size: 1.15rem;
+    min-height: 40px;
+    padding: 6px 8px;
+    font-size: 1rem;
   }
 }
