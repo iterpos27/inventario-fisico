@@ -27,9 +27,9 @@ final class ProductRepository
 
         if ($search !== '') {
             $where .= $searchIsCode
-                ? ' AND codigo LIKE :q_codigo'
-                : ' AND descripcion LIKE :q_descripcion';
-            $params[$searchIsCode ? ':q_codigo' : ':q_descripcion'] = "{$search}%";
+                ? " AND codigo LIKE :q_codigo ESCAPE '!'"
+                : " AND descripcion LIKE :q_descripcion ESCAPE '!'";
+            $params[$searchIsCode ? ':q_codigo' : ':q_descripcion'] = $this->likePattern($search, !$searchIsCode);
         }
 
         $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM productos WHERE {$where}");
@@ -65,6 +65,43 @@ final class ProductRepository
     }
 
     /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function searchActive(string $search, int $limit = 20): array
+    {
+        $search = trim($search);
+        $limit = max(1, min(50, $limit));
+        if (mb_strlen($search) < 3) {
+            return [];
+        }
+
+        $searchIsCode = preg_match('/^\d+$/', $search) === 1;
+        if ($searchIsCode) {
+            $stmt = $this->pdo->prepare(
+                "SELECT id, codigo, descripcion
+                 FROM productos
+                 WHERE estado = 1 AND codigo LIKE :q ESCAPE '!'
+                 ORDER BY codigo
+                 LIMIT :limit"
+            );
+            $stmt->bindValue(':q', $this->likePattern($search, false));
+        } else {
+            $stmt = $this->pdo->prepare(
+                "SELECT id, codigo, descripcion
+                 FROM productos
+                 WHERE estado = 1 AND descripcion LIKE :q ESCAPE '!'
+                 ORDER BY descripcion, codigo
+                 LIMIT :limit"
+            );
+            $stmt->bindValue(':q', $this->likePattern($search, true));
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /**
      * @param array<int, int> $ids
      * @return array<int, array<string, mixed>>
      */
@@ -80,5 +117,16 @@ final class ProductRepository
         $stmt->execute($ids);
 
         return $stmt->fetchAll();
+    }
+
+    private function likePattern(string $value, bool $contains): string
+    {
+        $escaped = strtr($value, [
+            '!' => '!!',
+            '%' => '!%',
+            '_' => '!_',
+        ]);
+
+        return $contains ? "%{$escaped}%" : "{$escaped}%";
     }
 }
