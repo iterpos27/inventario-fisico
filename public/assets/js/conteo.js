@@ -9,6 +9,9 @@ const state = {
   highlightedId: null,
   highlightTimer: null,
   saveModalTimer: null,
+  scannerStream: null,
+  scannerTimer: null,
+  scannerActive: false,
 };
 
 for (const item of window.CONTEO_INICIAL || []) {
@@ -334,7 +337,7 @@ $('limpiarBusqueda')?.addEventListener('click', () => {
   $('buscarProducto')?.focus();
 });
 $('abrirEscaner')?.addEventListener('click', () => {
-  showMessage('Escaner de codigo de barras pendiente de integrar.', 'warning');
+  startScanner();
 });
 
 $('crearConteo')?.addEventListener('click', crearConteo);
@@ -430,6 +433,108 @@ function showManualSaveModal() {
   state.saveModalTimer = setTimeout(() => modal.hide(), 5000);
 }
 
+async function startScanner() {
+  if (!('mediaDevices' in navigator) || !navigator.mediaDevices.getUserMedia) {
+    showMessage('Este navegador no permite usar la camara.', 'warning');
+    return;
+  }
+
+  if (!('BarcodeDetector' in window)) {
+    showMessage('Este navegador no soporta lectura QR/codigo. Use Chrome o Edge actualizado.', 'warning');
+    return;
+  }
+
+  const modalElement = $('modalEscanerProducto');
+  const video = $('videoEscanerProducto');
+  const status = $('estadoEscanerProducto');
+  if (!modalElement || !video || !status || !window.bootstrap) {
+    showMessage('No se pudo abrir el escaner.', 'danger');
+    return;
+  }
+
+  try {
+    status.textContent = 'Solicitando camara...';
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: false,
+    });
+    state.scannerStream = stream;
+    video.srcObject = stream;
+    await video.play();
+
+    const modal = window.bootstrap.Modal.getOrCreateInstance(modalElement);
+    modal.show();
+    status.textContent = 'Apunte la camara al codigo.';
+    scanLoop(new window.BarcodeDetector({
+      formats: ['qr_code', 'code_128', 'code_39', 'code_93', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'itf'],
+    }));
+  } catch (error) {
+    stopScanner();
+    status.textContent = 'No se pudo abrir la camara.';
+    showMessage('Permita el acceso a la camara para escanear.', 'danger');
+  }
+}
+
+function scanLoop(detector) {
+  const video = $('videoEscanerProducto');
+  const status = $('estadoEscanerProducto');
+  state.scannerActive = true;
+
+  const scan = async () => {
+    if (!state.scannerActive || !video) return;
+    try {
+      const codes = await detector.detect(video);
+      if (codes.length > 0) {
+        const value = (codes[0].rawValue || '').trim();
+        if (value !== '') {
+          if (status) status.textContent = `Codigo detectado: ${value}`;
+          applyScannedCode(value);
+          return;
+        }
+      }
+    } catch (error) {
+      if (status) status.textContent = 'No se pudo leer el codigo. Ajuste la distancia.';
+    }
+
+    state.scannerTimer = setTimeout(scan, 250);
+  };
+
+  scan();
+}
+
+function applyScannedCode(value) {
+  const input = $('buscarProducto');
+  if (input) {
+    input.value = value;
+    toggleSearchClear();
+    buscarProductos(value);
+  }
+  const modalElement = $('modalEscanerProducto');
+  if (modalElement && window.bootstrap) {
+    window.bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+  }
+  stopScanner();
+}
+
+function stopScanner() {
+  state.scannerActive = false;
+  clearTimeout(state.scannerTimer);
+  state.scannerTimer = null;
+  if (state.scannerStream) {
+    state.scannerStream.getTracks().forEach((track) => track.stop());
+    state.scannerStream = null;
+  }
+  const video = $('videoEscanerProducto');
+  if (video) {
+    video.pause();
+    video.srcObject = null;
+  }
+}
+
 function formatTime(date) {
   return date.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
 }
@@ -452,6 +557,7 @@ function clearSearch() {
 }
 
 setInterval(() => guardarBorrador(true), 30000);
+$('modalEscanerProducto')?.addEventListener('hidden.bs.modal', stopScanner);
 renderNombrePreview();
 renderList();
 toggleSearchClear();
