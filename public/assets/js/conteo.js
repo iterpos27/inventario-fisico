@@ -54,8 +54,10 @@ function renderList() {
 
   for (const item of items) {
     const isHighlighted = String(item.producto_id) === state.highlightedId;
+    const quantity = Number.parseFloat(item.cantidad || 0);
+    const isEmptyQuantity = !item.cantidad || Number.isNaN(quantity) || quantity <= 0;
     const row = document.createElement('div');
-    row.className = `count-item${isHighlighted ? ' is-flashing' : ''}`;
+    row.className = `count-item${isHighlighted ? ' is-flashing' : ''}${isEmptyQuantity ? ' is-empty-quantity' : ' has-quantity'}`;
     row.innerHTML = `
       <button class="btn btn-outline-danger count-item-delete" type="button" data-delete="${item.producto_id}" aria-label="Eliminar"><i class="bi bi-trash"></i></button>
       <div class="count-item-main">
