@@ -35,12 +35,12 @@ function ensure_schema(PDO $pdo): void
         "CREATE TABLE IF NOT EXISTS productos (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             codigo VARCHAR(80) NOT NULL UNIQUE,
-            descripcion VARCHAR(255) NOT NULL,
+            descripcion VARCHAR(1000) NOT NULL,
             estado TINYINT(1) NOT NULL DEFAULT 1,
             fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_productos_descripcion (descripcion),
+            INDEX idx_productos_descripcion (descripcion(191)),
             INDEX idx_productos_estado (estado),
-            INDEX idx_productos_estado_descripcion (estado, descripcion)
+            INDEX idx_productos_estado_descripcion (estado, descripcion(191))
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
 
@@ -102,7 +102,7 @@ function ensure_schema(PDO $pdo): void
             conteo_id INT UNSIGNED NOT NULL,
             producto_id INT UNSIGNED NOT NULL,
             codigo VARCHAR(80) NOT NULL,
-            descripcion VARCHAR(255) NOT NULL,
+            descripcion VARCHAR(1000) NOT NULL,
             cantidad DECIMAL(12,2) NOT NULL DEFAULT 0,
             fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             CONSTRAINT fk_detalle_conteo FOREIGN KEY (conteo_id) REFERENCES conteos(id) ON DELETE CASCADE,
@@ -169,6 +169,41 @@ function ensure_schema(PDO $pdo): void
     }
 
     try {
+        $pdo->exec('ALTER TABLE productos DROP INDEX idx_productos_descripcion');
+    } catch (Throwable $exception) {
+        // El indice puede no existir o ya estar actualizado.
+    }
+
+    try {
+        $pdo->exec('ALTER TABLE productos DROP INDEX idx_productos_estado_descripcion');
+    } catch (Throwable $exception) {
+        // El indice puede no existir o ya estar actualizado.
+    }
+
+    try {
+        $pdo->exec('ALTER TABLE productos MODIFY descripcion VARCHAR(1000) NOT NULL');
+    } catch (Throwable $exception) {
+        // Si falla, la importacion mostrara el error correspondiente.
+    }
+
+    try {
+        $pdo->exec('ALTER TABLE conteo_detalle MODIFY descripcion VARCHAR(1000) NOT NULL');
+    } catch (Throwable $exception) {
+        // Si falla, se conserva la definicion existente.
+    }
+
+    foreach ([
+        'ALTER TABLE productos ADD INDEX idx_productos_descripcion (descripcion(191))',
+        'ALTER TABLE productos ADD INDEX idx_productos_estado_descripcion (estado, descripcion(191))',
+    ] as $indexSql) {
+        try {
+            $pdo->exec($indexSql);
+        } catch (Throwable $exception) {
+            // El indice ya puede existir en instalaciones actualizadas.
+        }
+    }
+
+    try {
         $pdo->exec('ALTER TABLE tomas_fisicas MODIFY nombre_toma VARCHAR(500) NOT NULL');
     } catch (Throwable $exception) {
         // La columna puede estar ya actualizada.
@@ -181,7 +216,6 @@ function ensure_schema(PDO $pdo): void
     }
 
     foreach ([
-        'ALTER TABLE productos ADD INDEX idx_productos_estado_descripcion (estado, descripcion)',
         'ALTER TABLE conteos ADD INDEX idx_conteos_usuario_estado (usuario_id, estado)',
         'ALTER TABLE conteo_detalle ADD INDEX idx_detalle_producto (producto_id)',
         'ALTER TABLE toma_usuarios ADD INDEX idx_toma_usuarios_usuario_estado (usuario_id, estado)',
