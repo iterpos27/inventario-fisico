@@ -1103,6 +1103,156 @@ body {
   border-color: #d4e2f4;
 }
 
+.app-role-admin .admin-table-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app-role-admin .admin-table-top,
+.app-role-admin .admin-table-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #4c5c70;
+  font-size: 0.78rem;
+}
+
+.app-role-admin .admin-table-length,
+.app-role-admin .admin-table-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.app-role-admin .admin-table-length .form-select {
+  width: 72px;
+  min-height: 30px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  font-size: 0.78rem;
+}
+
+.app-role-admin .admin-table-search .form-control {
+  width: min(220px, 42vw);
+  min-height: 30px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  font-size: 0.78rem;
+}
+
+.app-role-admin .admin-data-table {
+  min-width: 760px;
+  margin: 0;
+  border: 1px solid #d9e2ec;
+  border-collapse: collapse;
+  background: #fff;
+  color: #1d2733;
+  font-size: 0.78rem;
+}
+
+.app-role-admin .admin-data-table th,
+.app-role-admin .admin-data-table td {
+  padding: 8px 10px;
+  border: 1px solid #e1e7ef;
+  vertical-align: middle;
+}
+
+.app-role-admin .admin-data-table thead th {
+  position: relative;
+  background: #f9fafc;
+  color: #26384f;
+  border-bottom-color: #d9e2ec;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: none;
+}
+
+.app-role-admin .admin-data-table thead th.is-sortable {
+  cursor: pointer;
+  padding-right: 28px;
+  user-select: none;
+}
+
+.app-role-admin .admin-data-table thead th.is-sortable::after {
+  position: absolute;
+  top: 50%;
+  right: 9px;
+  width: 7px;
+  height: 10px;
+  color: #b2bdca;
+  content: "";
+  transform: translateY(-50%);
+  background:
+    linear-gradient(135deg, transparent 50%, currentColor 50%) top left / 50% 50% no-repeat,
+    linear-gradient(225deg, transparent 50%, currentColor 50%) top right / 50% 50% no-repeat,
+    linear-gradient(45deg, transparent 50%, currentColor 50%) bottom left / 50% 50% no-repeat,
+    linear-gradient(315deg, transparent 50%, currentColor 50%) bottom right / 50% 50% no-repeat;
+}
+
+.app-role-admin .admin-data-table thead th[data-sort="asc"]::after {
+  color: var(--primary);
+  background:
+    linear-gradient(135deg, transparent 50%, currentColor 50%) top left / 50% 60% no-repeat,
+    linear-gradient(225deg, transparent 50%, currentColor 50%) top right / 50% 60% no-repeat;
+}
+
+.app-role-admin .admin-data-table thead th[data-sort="desc"]::after {
+  color: var(--primary);
+  background:
+    linear-gradient(45deg, transparent 50%, currentColor 50%) bottom left / 50% 60% no-repeat,
+    linear-gradient(315deg, transparent 50%, currentColor 50%) bottom right / 50% 60% no-repeat;
+}
+
+.app-role-admin .admin-data-table tbody tr:nth-child(even):not([hidden]) {
+  background: #fbfcfe;
+}
+
+.app-role-admin .admin-data-table tbody tr:hover {
+  background: #f2f7fd;
+}
+
+.app-role-admin .admin-table-pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+.app-role-admin .admin-page-btn {
+  min-width: 34px;
+  min-height: 31px;
+  padding: 4px 10px;
+  border: 1px solid #d9e2ec;
+  border-left: 0;
+  background: #fff;
+  color: var(--primary);
+  font-size: 0.78rem;
+}
+
+.app-role-admin .admin-page-btn:first-child {
+  border-left: 1px solid #d9e2ec;
+  border-radius: 4px 0 0 4px;
+}
+
+.app-role-admin .admin-page-btn:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.app-role-admin .admin-page-btn:hover:not(:disabled),
+.app-role-admin .admin-page-btn.is-active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.app-role-admin .admin-page-btn:disabled {
+  color: #8b98a8;
+  cursor: not-allowed;
+  background: #f8fafc;
+}
+
 @media (min-width: 768px) {
   .login-card {
     padding: 34px;
@@ -1398,6 +1548,27 @@ body {
 }
 
 @media (max-width: 767.98px) {
+  .app-role-admin .admin-table-top,
+  .app-role-admin .admin-table-bottom {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app-role-admin .admin-table-length,
+  .app-role-admin .admin-table-search {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .app-role-admin .admin-table-search .form-control {
+    width: min(100%, 260px);
+  }
+
+  .app-role-admin .admin-table-pagination {
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
   .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
