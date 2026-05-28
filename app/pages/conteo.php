@@ -259,6 +259,7 @@ if (current_user_role() !== 'admin') {
         <div class="position-relative">
             <input class="form-control form-control-lg search-input" id="buscarProducto" placeholder="Codigo o descripcion" autocomplete="off">
             <button class="search-clear d-none" id="limpiarBusqueda" type="button" aria-label="Limpiar busqueda"><i class="bi bi-x-circle-fill"></i></button>
+            <button class="search-scan" id="abrirEscaner" type="button" aria-label="Escanear codigo de barras"><i class="bi bi-upc-scan"></i></button>
             <div id="resultadosBusqueda" class="search-results d-none"></div>
         </div>
     </section>

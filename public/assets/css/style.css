@@ -20,13 +20,13 @@
 }
 
 .search-input {
-  padding-right: 44px;
+  padding-right: 86px;
 }
 
 .search-clear {
   position: absolute;
   top: 50%;
-  right: 10px;
+  right: 48px;
   z-index: 5;
   width: 34px;
   height: 34px;
@@ -44,8 +44,39 @@
   background: #edf5ff;
 }
 
+.search-scan {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  z-index: 5;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  transform: translateY(-50%);
+}
+
+.search-scan:hover {
+  background: var(--primary-dark);
+}
+
 .app-role-usuario .count-item.is-flashing {
   animation: countFlash 1.2s ease-out;
+}
+
+.quantity-stepper {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+}
+
+.quantity-btn {
+  display: none;
 }
 
 @keyframes countFlash {
@@ -2220,5 +2251,77 @@ body {
 @media (min-width: 768px) {
   .app-role-usuario .count-item {
     grid-template-columns: 46px minmax(0, 1fr) 260px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .app-role-usuario .count-item {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .app-role-usuario .count-item-delete {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 42px;
+    height: 42px;
+    grid-row: auto;
+  }
+
+  .app-role-usuario .count-item-main {
+    padding-right: 52px;
+  }
+
+  .app-role-usuario .count-item-main .product-code {
+    width: max-content;
+    max-width: 100%;
+    padding: 4px 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #edf5ff;
+    color: var(--accent);
+    font-size: 0.86rem;
+  }
+
+  .app-role-usuario .count-item-main strong {
+    margin-top: 6px;
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+
+  .app-role-usuario .count-item-actions {
+    grid-column: auto;
+    width: 100%;
+  }
+
+  .app-role-usuario .quantity-stepper {
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
+    gap: 8px;
+  }
+
+  .app-role-usuario .quantity-btn {
+    min-width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--primary);
+    font-size: 1.2rem;
+    font-weight: 800;
+  }
+
+  .app-role-usuario .quantity-btn:active {
+    border-color: var(--primary);
+    background: #edf5ff;
+  }
+
+  .app-role-usuario .count-item-actions input {
+    min-height: 52px;
+    font-size: 1.25rem;
   }
 }
