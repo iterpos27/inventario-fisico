@@ -5,6 +5,9 @@ const state = {
   items: new Map(),
   saving: false,
   created: $('conteoCreado')?.value === '1',
+  pendingDeleteId: null,
+  highlightedId: null,
+  highlightTimer: null,
 };
 
 for (const item of window.CONTEO_INICIAL || []) {
@@ -24,6 +27,15 @@ function moveItemFirst(id) {
   state.items = new Map([[key, item], ...state.items]);
 }
 
+function highlightItem(id) {
+  state.highlightedId = String(id);
+  clearTimeout(state.highlightTimer);
+  state.highlightTimer = setTimeout(() => {
+    state.highlightedId = null;
+    renderList();
+  }, 1300);
+}
+
 function showMessage(message, type = 'success') {
   const box = $('mensajeEstado');
   box.textContent = message;
@@ -40,8 +52,9 @@ function renderList() {
   list.innerHTML = '';
 
   for (const item of items) {
+    const isHighlighted = String(item.producto_id) === state.highlightedId;
     const row = document.createElement('div');
-    row.className = 'count-item';
+    row.className = `count-item${isHighlighted ? ' is-flashing' : ''}`;
     row.innerHTML = `
       <button class="btn btn-outline-danger count-item-delete" type="button" data-delete="${item.producto_id}" aria-label="Eliminar"><i class="bi bi-trash"></i></button>
       <div class="count-item-main">
@@ -114,15 +127,19 @@ function addProductLine(product) {
     showMessage('Producto ya estaba agregado. Actualice la cantidad.', 'warning');
   }
 
+  highlightItem(id);
   renderList();
+  setSaveStatus('Cambios pendientes por guardar.');
   $('resultadosBusqueda').classList.add('d-none');
   $('buscarProducto').value = '';
+  toggleSearchClear();
   focusQuantity(product.id);
 }
 
 async function guardarBorrador(auto = false) {
   if (state.saving || state.items.size === 0) return null;
   state.saving = true;
+  setSaveStatus(auto ? 'Autoguardando...' : 'Guardando borrador...');
   try {
     const response = await fetch(`${baseUrl}/actions/guardar_borrador`, {
       method: 'POST',
@@ -132,9 +149,11 @@ async function guardarBorrador(auto = false) {
     const data = await response.json();
     if (!response.ok || !data.ok) throw new Error(data.message || 'Error');
     $('conteoId').value = data.conteo_id;
+    setSaveStatus(`Guardado ${formatTime(new Date())}`);
     showMessage(auto ? 'Borrador guardado automaticamente' : data.message);
     return data;
   } catch (error) {
+    setSaveStatus('No se pudo guardar. Revise la conexion.');
     showMessage('No se pudo guardar el borrador', 'danger');
     return null;
   } finally {
@@ -271,7 +290,13 @@ function buildPayload() {
 let searchTimer = null;
 $('buscarProducto')?.addEventListener('input', (event) => {
   clearTimeout(searchTimer);
+  toggleSearchClear();
   searchTimer = setTimeout(() => buscarProductos(event.target.value), 220);
+});
+
+$('limpiarBusqueda')?.addEventListener('click', () => {
+  clearSearch();
+  $('buscarProducto')?.focus();
 });
 
 $('crearConteo')?.addEventListener('click', crearConteo);
@@ -300,6 +325,7 @@ $('listaProductos')?.addEventListener('input', (event) => {
   const id = event.target.dataset.edit;
   if (!id || !state.items.has(id)) return;
   state.items.get(id).cantidad = event.target.value;
+  setSaveStatus('Cambios pendientes por guardar.');
 });
 $('listaProductos')?.addEventListener('keydown', (event) => {
   if (event.key !== 'Enter' || !event.target.dataset.edit) return;
@@ -309,9 +335,30 @@ $('listaProductos')?.addEventListener('keydown', (event) => {
 $('listaProductos')?.addEventListener('click', (event) => {
   const button = event.target.closest('[data-delete]');
   if (!button) return;
-  state.items.delete(button.dataset.delete);
-  renderList();
+  state.pendingDeleteId = button.dataset.delete;
+  const modalElement = $('modalEliminarProductoConteo');
+  if (!modalElement || !window.bootstrap) {
+    deletePendingProduct();
+    return;
+  }
+  window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
 });
+
+$('confirmarEliminarProductoConteo')?.addEventListener('click', () => {
+  deletePendingProduct();
+  const modalElement = $('modalEliminarProductoConteo');
+  if (modalElement && window.bootstrap) {
+    window.bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+  }
+});
+
+function deletePendingProduct() {
+  if (!state.pendingDeleteId) return;
+  state.items.delete(state.pendingDeleteId);
+  state.pendingDeleteId = null;
+  renderList();
+  setSaveStatus('Cambios pendientes por guardar.');
+}
 
 function updateActiveOperationHeader(text) {
   if (!text) return;
@@ -327,6 +374,29 @@ function updateActiveOperationHeader(text) {
   if ($('operacionFinalizacion')) $('operacionFinalizacion').textContent = fin;
 }
 
+function setSaveStatus(text) {
+  const status = $('estadoGuardado');
+  if (status) status.textContent = text;
+}
+
+function formatTime(date) {
+  return date.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
+}
+
+function toggleSearchClear() {
+  const input = $('buscarProducto');
+  $('limpiarBusqueda')?.classList.toggle('d-none', !input || input.value.trim() === '');
+}
+
+function clearSearch() {
+  const input = $('buscarProducto');
+  if (input) input.value = '';
+  $('resultadosBusqueda')?.classList.add('d-none');
+  if ($('resultadosBusqueda')) $('resultadosBusqueda').innerHTML = '';
+  toggleSearchClear();
+}
+
 setInterval(() => guardarBorrador(true), 30000);
 renderNombrePreview();
 renderList();
+toggleSearchClear();

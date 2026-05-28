@@ -233,6 +233,7 @@ if (current_user_role() !== 'admin') {
             <div class="operation-info">
                 <span class="operation-tag"><i class="bi bi-play-circle-fill text-success me-1"></i> Operación Activa</span>
                 <h3 id="operacionToma" class="operation-title"><?= e($tomaFisica) ?: 'Toma Física' ?></h3>
+                <small id="estadoGuardado" class="save-status">Sin cambios recientes.</small>
                 <div class="operation-meta">
                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2">
                         <i class="bi bi-building"></i> <span id="operacionAgencia"><?= e($agencia) ?: 'Agencia' ?></span>
@@ -257,6 +258,7 @@ if (current_user_role() !== 'admin') {
         <label class="form-label" for="buscarProducto">Buscar producto</label>
         <div class="position-relative">
             <input class="form-control form-control-lg search-input" id="buscarProducto" placeholder="Codigo o descripcion" autocomplete="off">
+            <button class="search-clear d-none" id="limpiarBusqueda" type="button" aria-label="Limpiar busqueda"><i class="bi bi-x-circle-fill"></i></button>
             <div id="resultadosBusqueda" class="search-results d-none"></div>
         </div>
     </section>
@@ -273,6 +275,26 @@ if (current_user_role() !== 'admin') {
 
     <div id="mensajeEstado" class="save-message d-none"></div>
 </main>
+
+<div class="modal fade" id="modalEliminarProductoConteo" tabindex="-1" aria-labelledby="modalEliminarProductoConteoTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-confirm-modal">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="modalEliminarProductoConteoTitulo">Eliminar producto</h2>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>Desea eliminar este producto del conteo?</p>
+                <p class="mb-0 text-secondary">La linea se quitara de la lista antes de guardar el borrador o finalizar.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-primary" type="button" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-danger" id="confirmarEliminarProductoConteo" type="button"><i class="bi bi-trash"></i> Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 window.CONTEO_INICIAL = <?= json_encode($detalles, JSON_UNESCAPED_UNICODE) ?>;
 window.BASE_URL = '<?= BASE_URL ?>';
