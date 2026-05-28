@@ -8,6 +8,11 @@ if (current_user_role() === 'admin') {
     exit;
 }
 
+if (current_user_role() !== 'admin') {
+    header('Location: ' . page_url('conteo'));
+    exit;
+}
+
 $estado = $_GET['estado'] ?? '';
 $params = [];
 $sql = "SELECT c.id, c.nombre_conteo, c.estado, c.fecha_inicio, c.fecha_finalizacion, c.archivo_excel, u.nombre

@@ -16,6 +16,14 @@ for (const item of window.CONTEO_INICIAL || []) {
   });
 }
 
+function moveItemFirst(id) {
+  const key = String(id);
+  if (!state.items.has(key)) return;
+  const item = state.items.get(key);
+  state.items.delete(key);
+  state.items = new Map([[key, item], ...state.items]);
+}
+
 function showMessage(message, type = 'success') {
   const box = $('mensajeEstado');
   box.textContent = message;
@@ -35,13 +43,13 @@ function renderList() {
     const row = document.createElement('div');
     row.className = 'count-item';
     row.innerHTML = `
+      <button class="btn btn-outline-danger count-item-delete" type="button" data-delete="${item.producto_id}" aria-label="Eliminar"><i class="bi bi-trash"></i></button>
       <div class="count-item-main">
         <span class="product-code">${escapeHtml(item.codigo)}</span>
         <strong>${escapeHtml(item.descripcion)}</strong>
       </div>
       <div class="count-item-actions">
         <input class="form-control" type="number" step="0.01" min="0" inputmode="decimal" value="${item.cantidad || ''}" placeholder="Cantidad" data-edit="${item.producto_id}">
-        <button class="btn btn-outline-danger" type="button" data-delete="${item.producto_id}" aria-label="Eliminar"><i class="bi bi-trash"></i></button>
       </div>
     `;
     list.appendChild(row);
@@ -95,17 +103,18 @@ function focusQuantity(productId) {
 function addProductLine(product) {
   const id = String(product.id);
   if (!state.items.has(id)) {
-    state.items.set(id, {
+    state.items = new Map([[id, {
       producto_id: Number(product.id),
       codigo: product.codigo,
       descripcion: product.descripcion,
       cantidad: '',
-    });
-    renderList();
+    }], ...state.items]);
   } else {
+    moveItemFirst(id);
     showMessage('Producto ya estaba agregado. Actualice la cantidad.', 'warning');
   }
 
+  renderList();
   $('resultadosBusqueda').classList.add('d-none');
   $('buscarProducto').value = '';
   focusQuantity(product.id);
@@ -206,7 +215,7 @@ async function crearConteo() {
     $('conteoWorkspace')?.classList.remove('d-none');
     $('accionesConteo')?.classList.remove('d-none');
     $('operacionActiva')?.classList.remove('d-none');
-    if ($('operacionNombre')) $('operacionNombre').textContent = data.nombre_conteo || nombre;
+    updateActiveOperationHeader(data.nombre_conteo || nombre);
     if ($('nombreConteo')) $('nombreConteo').value = data.nombre_conteo || nombre;
     showMessage('Conteo creado. Ya puede agregar productos.');
     $('buscarProducto')?.focus();
@@ -303,6 +312,20 @@ $('listaProductos')?.addEventListener('click', (event) => {
   state.items.delete(button.dataset.delete);
   renderList();
 });
+
+function updateActiveOperationHeader(text) {
+  if (!text) return;
+  const lines = text.split('\n');
+  const toma = (lines[0] || '').trim();
+  const agencia = (lines[1] || '').replace('AGENCIA:', '').trim();
+  const hab = (lines[2] || '').replace('HABILITACION:', '').trim();
+  const fin = (lines[3] || '').replace('FINALIZACION:', '').trim();
+
+  if ($('operacionToma')) $('operacionToma').textContent = toma;
+  if ($('operacionAgencia')) $('operacionAgencia').textContent = agencia || 'Sin agencia';
+  if ($('operacionHabilitacion')) $('operacionHabilitacion').textContent = hab;
+  if ($('operacionFinalizacion')) $('operacionFinalizacion').textContent = fin;
+}
 
 setInterval(() => guardarBorrador(true), 30000);
 renderNombrePreview();

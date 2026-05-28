@@ -91,14 +91,20 @@ $conteoJsVersion = file_exists(PUBLIC_PATH . '/assets/js/conteo.js')
     : APP_VERSION;
 require_once APP_INCLUDES_PATH . '/header.php';
 require_once APP_INCLUDES_PATH . '/navbar.php';
+$conteoShellClass = 'container py-3 conteo-shell';
+if (current_user_role() !== 'admin') {
+    $conteoShellClass .= $conteo ? ' user-conteo-shell user-conteo-workspace' : ' user-conteo-shell user-conteo-home';
+}
 ?>
-<main class="container py-3 conteo-shell">
+<main class="<?= e($conteoShellClass) ?>">
+    <?php if (current_user_role() === 'admin' || !$conteo): ?>
     <div class="page-heading compact">
         <div>
             <p class="eyebrow">Conteo fisico</p>
             <h1><?= current_user_role() === 'admin' ? 'Crear toma fisica' : ($conteo ? 'Continuar conteo' : 'Seleccionar conteo') ?></h1>
         </div>
     </div>
+    <?php endif; ?>
 
     <?php if (!empty($_GET['msg'])): ?><div class="alert alert-success"><?= e($_GET['msg']) ?></div><?php endif; ?>
     <?php if (!empty($_GET['error'])): ?><div class="alert alert-danger"><?= e($_GET['error']) ?></div><?php endif; ?>
@@ -187,16 +193,17 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     <?php endif; ?>
 
     <?php if (current_user_role() !== 'admin' && !$conteo): ?>
-        <section class="content-panel mb-3">
+        <section class="content-panel mb-3 available-counts-panel">
             <div class="section-title"><h2>Conteos disponibles</h2></div>
-            <div class="count-list">
+            <div class="available-count-grid">
                 <?php foreach ($tomasDisponibles as $disponible): ?>
                     <form method="post" action="<?= action_url('iniciar_conteo') ?>">
                         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                         <input type="hidden" name="toma_id" value="<?= (int) $disponible['toma_id'] ?>">
                         <button class="available-count" type="submit">
-                        <span><?= nl2br(e($disponible['nombre_toma'])) ?></span>
-                        <small><?= (int) $disponible['lineas'] ?> lineas registradas - <?= $disponible['conteo_estado'] === 'borrador' ? 'Continuar' : 'Empezar' ?></small>
+                            <span class="available-count-title"><?= nl2br(e($disponible['nombre_toma'])) ?></span>
+                            <small><?= (int) $disponible['lineas'] ?> lineas registradas - <?= $disponible['conteo_estado'] === 'borrador' ? 'Continuar' : 'Empezar' ?></small>
+                            <i class="bi bi-arrow-right-circle"></i>
                         </button>
                     </form>
                 <?php endforeach; ?>
@@ -207,17 +214,43 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
         </section>
     <?php endif; ?>
 
-    <?php if ($conteo): ?>
-        <div class="content-panel count-operation mb-3">
-            <span>Operacion activa</span>
-            <strong><?= nl2br(e($conteo['nombre_conteo'])) ?></strong>
+    <?php
+    $nombreConteo = $conteo['nombre_conteo'] ?? '';
+    $tomaFisica = '';
+    $agencia = '';
+    $habilitacion = '';
+    $finalizacion = '';
+    if ($nombreConteo) {
+        $lines = explode("\n", $nombreConteo);
+        $tomaFisica = trim($lines[0] ?? '');
+        $agencia = isset($lines[1]) ? trim(str_replace('AGENCIA:', '', $lines[1])) : '';
+        $habilitacion = isset($lines[2]) ? trim(str_replace('HABILITACION:', '', $lines[2])) : '';
+        $finalizacion = isset($lines[3]) ? trim(str_replace('FINALIZACION:', '', $lines[3])) : '';
+    }
+    ?>
+    <div id="operacionActiva" class="content-panel count-operation-card mb-3 <?= ($conteo && current_user_role() !== 'admin') ? '' : 'd-none' ?>">
+        <div class="operation-card-body">
+            <div class="operation-info">
+                <span class="operation-tag"><i class="bi bi-play-circle-fill text-success me-1"></i> Operación Activa</span>
+                <h3 id="operacionToma" class="operation-title"><?= e($tomaFisica) ?: 'Toma Física' ?></h3>
+                <div class="operation-meta">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2">
+                        <i class="bi bi-building"></i> <span id="operacionAgencia"><?= e($agencia) ?: 'Agencia' ?></span>
+                    </span>
+                    <span class="badge bg-light text-secondary border py-1 px-2">
+                        <i class="bi bi-calendar-event"></i> Habilitación: <span id="operacionHabilitacion"><?= e($habilitacion) ?: '-' ?></span>
+                    </span>
+                    <span class="badge bg-light text-secondary border py-1 px-2">
+                        <i class="bi bi-calendar-check"></i> Cierre: <span id="operacionFinalizacion"><?= e($finalizacion) ?: '-' ?></span>
+                    </span>
+                </div>
+            </div>
+            <div id="accionesConteo" class="operation-actions <?= ($conteo && current_user_role() !== 'admin') ? '' : 'd-none' ?>">
+                <button class="btn btn-outline-primary" id="guardarBorrador" type="button"><i class="bi bi-save"></i> Guardar borrador</button>
+                <button class="btn btn-success" id="finalizarConteo" type="button"><i class="bi bi-check2-circle"></i> Finalizar conteo</button>
+            </div>
         </div>
-    <?php else: ?>
-        <div id="operacionActiva" class="content-panel count-operation mb-3 d-none">
-            <span>Operacion activa</span>
-            <strong id="operacionNombre"></strong>
-        </div>
-    <?php endif; ?>
+    </div>
 
     <section id="conteoWorkspace" class="<?= ($conteo && current_user_role() !== 'admin') ? '' : 'd-none' ?>">
     <section class="count-tool">
@@ -239,11 +272,6 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     </section>
 
     <div id="mensajeEstado" class="save-message d-none"></div>
-
-    <div id="accionesConteo" class="mobile-actions <?= ($conteo && current_user_role() !== 'admin') ? '' : 'd-none' ?>">
-        <button class="btn btn-outline-primary btn-lg" id="guardarBorrador" type="button"><i class="bi bi-save"></i> Guardar borrador</button>
-        <button class="btn btn-success btn-lg" id="finalizarConteo" type="button"><i class="bi bi-check2-circle"></i> Finalizar conteo</button>
-    </div>
 </main>
 <script>
 window.CONTEO_INICIAL = <?= json_encode($detalles, JSON_UNESCAPED_UNICODE) ?>;

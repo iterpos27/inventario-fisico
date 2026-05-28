@@ -1022,6 +1022,10 @@ body {
 }
 
 @media (max-width: 991.98px) {
+  html {
+    font-size: 92%;
+  }
+
   .app-sidebar {
     display: none;
   }
@@ -1824,5 +1828,322 @@ body {
   .btn-lg {
     min-height: 38px;
     padding: 7px 12px;
+  }
+}
+
+.available-count-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.available-count {
+  position: relative;
+  display: grid;
+  width: 100%;
+  gap: 7px;
+  padding: 14px 48px 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: #003b79;
+  text-align: left;
+  box-shadow: 0 8px 20px rgba(23, 71, 125, 0.04);
+}
+
+.available-count:hover {
+  border-color: var(--primary);
+  background: #f8fbff;
+}
+
+.available-count-title {
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.available-count small {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.available-count > i {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  color: var(--primary);
+  font-size: 1.25rem;
+  transform: translateY(-50%);
+}
+
+@media (min-width: 992px) {
+  .app-role-usuario .user-conteo-shell {
+    padding-bottom: 26px;
+  }
+
+  .app-role-usuario .user-conteo-home .available-counts-panel {
+    max-width: 980px;
+  }
+
+  .app-role-usuario .user-conteo-home .available-count-grid {
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    align-items: stretch;
+  }
+
+  .app-role-usuario .available-count {
+    min-height: 118px;
+  }
+
+  .app-role-usuario .count-operation strong {
+    font-size: 0.98rem;
+    line-height: 1.55;
+  }
+
+  .app-role-usuario .count-tool {
+    margin-bottom: 14px;
+  }
+
+  .app-role-usuario .count-item {
+    grid-template-columns: minmax(0, 1fr) 210px;
+    align-items: center;
+    padding: 10px 12px;
+  }
+
+  .app-role-usuario .count-item-actions {
+    grid-template-columns: minmax(0, 1fr) 46px;
+  }
+
+  .app-role-usuario .count-item-actions input {
+    min-height: 44px;
+  }
+
+  /* Mobile actions replaced by unified header card actions */
+
+  .app-role-usuario .save-message {
+    right: 24px;
+    bottom: 24px;
+    left: calc(var(--lte-sidebar-width) + 24px);
+  }
+}
+
+@media (max-width: 991.98px) {
+  .app-role-usuario .available-count {
+    min-height: 92px;
+  }
+}
+
+.app-role-usuario .user-conteo-workspace {
+  padding-bottom: 28px;
+}
+
+/* Card active count and actions layout styled below */
+
+.app-role-usuario .count-item {
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+}
+
+.app-role-usuario .count-item-delete {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  grid-row: 1 / span 2;
+}
+
+.app-role-usuario .count-item-actions {
+  grid-column: 2;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+  .app-role-usuario .count-item {
+    grid-template-columns: 46px minmax(0, 1fr) 180px;
+  }
+
+  .app-role-usuario .count-item-delete {
+    grid-row: auto;
+  }
+
+  .app-role-usuario .count-item-actions {
+    grid-column: auto;
+  }
+}
+
+/* ==========================================
+   NUEVO DISEÑO CARD OPERACION ACTIVA Y BOTONES
+   ========================================== */
+.count-operation-card {
+  background: #ffffff;
+  border: 1px solid #d7e4f5;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(23, 71, 125, 0.05);
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.operation-card-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.operation-info {
+  flex: 1;
+  min-width: 280px;
+}
+
+.operation-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #4e6380;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.operation-title {
+  color: #003b79;
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0 0 12px 0;
+  line-height: 1.35;
+}
+
+.operation-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.operation-meta .badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.operation-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.operation-actions .btn {
+  min-height: 44px;
+  padding: 8px 18px;
+  font-weight: 700;
+  border-radius: 6px;
+  font-size: 0.92rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.operation-actions .btn:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+}
+
+.operation-actions .btn:active {
+  transform: translateY(0);
+}
+
+.operation-actions .btn-outline-primary {
+  color: #1f5a99;
+  border-color: #1f5a99;
+  background-color: transparent;
+}
+
+.operation-actions .btn-outline-primary:hover {
+  background-color: #1f5a99;
+  color: #ffffff;
+}
+
+.operation-actions .btn-success {
+  background-color: #137044;
+  border-color: #137044;
+  color: #ffffff;
+}
+
+.operation-actions .btn-success:hover {
+  background-color: #0f5c37;
+  border-color: #0f5c37;
+}
+
+@media (max-width: 767.98px) {
+  .count-operation-card {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .operation-card-body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .operation-info {
+    min-width: 100%;
+  }
+
+  .operation-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .operation-meta .badge {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .operation-actions {
+    display: block;
+    width: 100%;
+  }
+
+  .operation-actions #finalizarConteo {
+    width: 100%;
+    min-height: 46px;
+    font-size: 0.88rem;
+  }
+
+  .operation-actions #guardarBorrador {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    width: 100%;
+    margin: 0;
+    border: none;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    background-color: #ffffff;
+    color: var(--primary);
+    box-shadow: 0 -4px 12px rgba(23, 71, 125, 0.08);
+    min-height: 56px;
+    font-size: 0.92rem;
+    justify-content: center;
+  }
+
+  .operation-actions #guardarBorrador:hover {
+    background-color: var(--soft);
+    transform: none;
+  }
+
+  .app-role-usuario .user-conteo-workspace {
+    padding-bottom: 80px;
   }
 }
