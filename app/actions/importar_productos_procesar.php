@@ -17,6 +17,36 @@ if (!file_exists($autoload)) {
 require_once $autoload;
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+
+@set_time_limit(300);
+@ini_set('memory_limit', '512M');
+
+function flush_product_import_batch(PDO $pdo, array &$batch): int
+{
+    if (!$batch) {
+        return 0;
+    }
+
+    $values = [];
+    $params = [];
+    foreach ($batch as $product) {
+        $values[] = '(?, ?, 1)';
+        $params[] = $product['codigo'];
+        $params[] = $product['descripcion'];
+    }
+
+    $sql = 'INSERT INTO productos (codigo, descripcion, estado) VALUES '
+        . implode(', ', $values)
+        . ' ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion), estado = 1';
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $processed = count($batch);
+    $batch = [];
+
+    return $processed;
+}
 
 $missingPhpExtensions = [];
 foreach (['zip', 'gd'] as $extension) {
@@ -57,19 +87,26 @@ if (!move_uploaded_file($_FILES['archivo']['tmp_name'], $savedFile)) {
 }
 
 try {
-    $spreadsheet = IOFactory::load($savedFile);
-    $rows = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
-    if (count($rows) < 2) {
+    $reader = IOFactory::createReaderForFile($savedFile);
+    $reader->setReadDataOnly(true);
+    $spreadsheet = $reader->load($savedFile);
+    $sheet = $spreadsheet->getActiveSheet();
+    $highestRow = $sheet->getHighestDataRow();
+    if ($highestRow < 2) {
         throw new RuntimeException('Archivo sin datos');
     }
 
-    $headerRow = reset($rows) ?: [];
-    $headers = array_map(static function ($header): string {
-        $header = strtolower(trim((string) $header));
-        $header = str_replace(["\xEF\xBB\xBF", ' ', '_', '-'], ['', '', '', ''], $header);
+    $highestColumnIndex = Coordinate::columnIndexFromString($sheet->getHighestDataColumn());
+    $headerRow = [];
+    for ($columnIndex = 1; $columnIndex <= $highestColumnIndex; $columnIndex++) {
+        $headerRow[$columnIndex] = $sheet->getCell(Coordinate::stringFromColumnIndex($columnIndex) . '1')->getValue();
+    }
 
-        return $header;
-    }, $headerRow);
+    $headers = [];
+    foreach ($headerRow as $columnIndex => $header) {
+        $header = strtolower(trim((string) $header));
+        $headers[$columnIndex] = str_replace(["\xEF\xBB\xBF", ' ', '_', '-'], ['', '', '', ''], $header);
+    }
 
     $codigoCol = array_search('codigo', $headers, true);
     $descripcionCol = array_search('descripcion', $headers, true);
@@ -77,25 +114,31 @@ try {
         throw new RuntimeException('Columnas requeridas no encontradas');
     }
 
-    $stmt = $pdo->prepare(
-        'INSERT INTO productos (codigo, descripcion, estado)
-         VALUES (?, ?, 1)
-         ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion), estado = 1'
-    );
-
     $procesados = 0;
+    $batch = [];
+    $batchSize = 500;
     $pdo->beginTransaction();
-    foreach (array_slice($rows, 1) as $row) {
-        $codigo = normalizar_codigo_producto($row[$codigoCol] ?? '');
-        $descripcion = trim((string) ($row[$descripcionCol] ?? ''));
+    for ($rowIndex = 2; $rowIndex <= $highestRow; $rowIndex++) {
+        $codigo = normalizar_codigo_producto($sheet->getCell(Coordinate::stringFromColumnIndex((int) $codigoCol) . $rowIndex)->getValue());
+        $descripcion = trim((string) $sheet->getCell(Coordinate::stringFromColumnIndex((int) $descripcionCol) . $rowIndex)->getValue());
         if ($codigo === '' || $descripcion === '') {
             continue;
         }
-        $stmt->execute([$codigo, $descripcion]);
-        $procesados++;
+
+        $batch[] = [
+            'codigo' => $codigo,
+            'descripcion' => $descripcion,
+        ];
+
+        if (count($batch) >= $batchSize) {
+            $procesados += flush_product_import_batch($pdo, $batch);
+        }
     }
+    $procesados += flush_product_import_batch($pdo, $batch);
     $pdo->commit();
 
+    $spreadsheet->disconnectWorksheets();
+    unset($spreadsheet);
     @unlink($savedFile);
     header('Location: ' . page_url('productos', ['msg' => "Importacion completada: {$procesados} productos procesados"]));
 } catch (Throwable $exception) {
