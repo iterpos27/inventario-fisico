@@ -8,6 +8,7 @@ const state = {
   pendingDeleteId: null,
   highlightedId: null,
   highlightTimer: null,
+  saveModalTimer: null,
 };
 
 for (const item of window.CONTEO_INICIAL || []) {
@@ -150,11 +151,11 @@ async function guardarBorrador(auto = false) {
     if (!response.ok || !data.ok) throw new Error(data.message || 'Error');
     $('conteoId').value = data.conteo_id;
     setSaveStatus(`Guardado ${formatTime(new Date())}`);
-    showMessage(auto ? 'Borrador guardado automaticamente' : data.message);
+    if (!auto) showManualSaveModal();
     return data;
   } catch (error) {
     setSaveStatus('No se pudo guardar. Revise la conexion.');
-    showMessage('No se pudo guardar el borrador', 'danger');
+    if (!auto) showMessage('No se pudo guardar el borrador', 'danger');
     return null;
   } finally {
     state.saving = false;
@@ -380,6 +381,19 @@ function updateActiveOperationHeader(text) {
 function setSaveStatus(text) {
   const status = $('estadoGuardado');
   if (status) status.textContent = text;
+}
+
+function showManualSaveModal() {
+  const modalElement = $('modalBorradorGuardado');
+  if (!modalElement || !window.bootstrap) {
+    showMessage('Proceso guardado');
+    return;
+  }
+
+  clearTimeout(state.saveModalTimer);
+  const modal = window.bootstrap.Modal.getOrCreateInstance(modalElement);
+  modal.show();
+  state.saveModalTimer = setTimeout(() => modal.hide(), 5000);
 }
 
 function formatTime(date) {

@@ -296,6 +296,18 @@ if (current_user_role() !== 'admin') {
     </div>
 </div>
 
+<div class="modal fade" id="modalBorradorGuardado" tabindex="-1" aria-labelledby="modalBorradorGuardadoTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-confirm-modal save-confirm-modal">
+            <div class="modal-body text-center">
+                <i class="bi bi-check2-circle"></i>
+                <h2 class="modal-title fs-5" id="modalBorradorGuardadoTitulo">Proceso guardado</h2>
+                <p class="mb-0 text-secondary">El borrador fue guardado correctamente.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 window.CONTEO_INICIAL = <?= json_encode($detalles, JSON_UNESCAPED_UNICODE) ?>;
 window.BASE_URL = '<?= BASE_URL ?>';

@@ -2042,6 +2042,27 @@ body {
   font-weight: 700;
 }
 
+.save-confirm-modal {
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.save-confirm-modal .modal-body {
+  padding: 28px 22px;
+}
+
+.save-confirm-modal .bi-check2-circle {
+  display: block;
+  margin-bottom: 10px;
+  color: #198754;
+  font-size: 2.25rem;
+}
+
+.save-confirm-modal .modal-title {
+  color: var(--accent);
+  font-weight: 800;
+}
+
 @media (min-width: 768px) {
   .app-role-usuario .count-item {
     grid-template-columns: 46px minmax(0, 1fr) 180px;
