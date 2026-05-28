@@ -62,11 +62,7 @@ function renderList() {
         <strong>${escapeHtml(item.descripcion)}</strong>
       </div>
       <div class="count-item-actions">
-        <div class="quantity-stepper">
-          <button class="quantity-btn" type="button" data-decrement="${item.producto_id}" aria-label="Restar cantidad"><i class="bi bi-dash"></i></button>
-          <input class="form-control" type="number" step="0.01" min="0" inputmode="decimal" value="${item.cantidad || ''}" placeholder="Cantidad" data-edit="${item.producto_id}">
-          <button class="quantity-btn" type="button" data-increment="${item.producto_id}" aria-label="Sumar cantidad"><i class="bi bi-plus"></i></button>
-        </div>
+        <input class="form-control" type="number" step="0.01" min="0" inputmode="decimal" value="${item.cantidad || ''}" placeholder="Cantidad" data-edit="${item.producto_id}">
       </div>
     `;
     list.appendChild(row);
@@ -334,15 +330,6 @@ $('listaProductos')?.addEventListener('input', (event) => {
   state.items.get(id).cantidad = event.target.value;
   setSaveStatus('Cambios pendientes por guardar.');
 });
-$('listaProductos')?.addEventListener('click', (event) => {
-  const increment = event.target.closest('[data-increment]');
-  const decrement = event.target.closest('[data-decrement]');
-  const button = increment || decrement;
-  if (!button) return;
-
-  const id = button.dataset.increment || button.dataset.decrement;
-  adjustQuantity(id, increment ? 1 : -1);
-});
 $('listaProductos')?.addEventListener('keydown', (event) => {
   if (event.key !== 'Enter' || !event.target.dataset.edit) return;
   event.preventDefault();
@@ -374,18 +361,6 @@ function deletePendingProduct() {
   state.pendingDeleteId = null;
   renderList();
   setSaveStatus('Cambios pendientes por guardar.');
-}
-
-function adjustQuantity(id, delta) {
-  const key = String(id);
-  const item = state.items.get(key);
-  if (!item) return;
-  const current = Number.parseFloat(item.cantidad || 0);
-  const next = Math.max(0, current + delta);
-  item.cantidad = Number.isInteger(next) ? String(next) : next.toFixed(2);
-  renderList();
-  setSaveStatus('Cambios pendientes por guardar.');
-  focusQuantity(key);
 }
 
 function updateActiveOperationHeader(text) {
