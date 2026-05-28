@@ -118,13 +118,11 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
                             <td><?= (int) $toma['finalizados'] ?></td>
                             <td><?= e($toma['fecha_finalizacion'] ?? '-') ?></td>
                             <td>
-                                <?php if (!empty($toma['archivo_excel'])): ?>
-                                    <a class="btn btn-sm btn-success" href="<?= action_url('descargar_consolidado', ['toma_id' => (int) $toma['id']]) ?>"><i class="bi bi-download"></i> Descargar</a>
-                                <?php elseif ((int) $toma['conteos_con_detalle'] > 0): ?>
+                                <?php if ((int) $toma['conteos_con_detalle'] > 0): ?>
                                     <form method="post" action="<?= action_url('generar_consolidado') ?>">
                                         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                                         <input type="hidden" name="toma_id" value="<?= (int) $toma['id'] ?>">
-                                        <button class="btn btn-sm btn-success" type="submit"><i class="bi bi-file-earmark-spreadsheet"></i> Generar</button>
+                                        <button class="btn btn-sm btn-success" type="submit"><i class="bi bi-download"></i> Descargar</button>
                                     </form>
                                 <?php else: ?>
                                     <span class="text-secondary">Pendiente</span>

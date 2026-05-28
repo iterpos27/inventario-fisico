@@ -16,6 +16,7 @@ if (!file_exists($autoload)) {
 require_once $autoload;
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 $tomaId = (int) ($_POST['toma_id'] ?? 0);
@@ -33,18 +34,48 @@ try {
     }
 
     $stmt = $pdo->prepare(
-        "SELECT d.codigo, d.descripcion, SUM(d.cantidad) AS cantidad, GROUP_CONCAT(DISTINCT u.nombre ORDER BY u.nombre SEPARATOR ', ') AS usuarios
+        "SELECT DISTINCT u.id, u.nombre
          FROM conteos c
-         INNER JOIN conteo_detalle d ON d.conteo_id = c.id
          INNER JOIN usuarios u ON u.id = c.usuario_id
          WHERE c.toma_id = ? AND c.estado = 'finalizado'
-         GROUP BY d.producto_id, d.codigo, d.descripcion
-         ORDER BY d.descripcion"
+         ORDER BY u.nombre"
+    );
+    $stmt->execute([$tomaId]);
+    $usuarios = $stmt->fetchAll();
+    if (!$usuarios) {
+        throw new RuntimeException('Sin usuarios finalizados');
+    }
+
+    $stmt = $pdo->prepare(
+        "SELECT d.producto_id, d.codigo, d.descripcion, c.usuario_id, SUM(d.cantidad) AS cantidad
+         FROM conteos c
+         INNER JOIN conteo_detalle d ON d.conteo_id = c.id
+         WHERE c.toma_id = ? AND c.estado = 'finalizado'
+         GROUP BY d.producto_id, d.codigo, d.descripcion, c.usuario_id
+         ORDER BY d.codigo, d.descripcion"
     );
     $stmt->execute([$tomaId]);
     $detalles = $stmt->fetchAll();
     if (!$detalles) {
         throw new RuntimeException('Sin productos contados');
+    }
+
+    $productos = [];
+    foreach ($detalles as $detalle) {
+        $productoKey = (string) ($detalle['producto_id'] ?: $detalle['codigo']);
+        if (!isset($productos[$productoKey])) {
+            $productos[$productoKey] = [
+                'codigo' => $detalle['codigo'],
+                'descripcion' => $detalle['descripcion'],
+                'usuarios' => [],
+                'total' => 0.0,
+            ];
+        }
+
+        $cantidad = (float) $detalle['cantidad'];
+        $usuarioId = (int) $detalle['usuario_id'];
+        $productos[$productoKey]['usuarios'][$usuarioId] = $cantidad;
+        $productos[$productoKey]['total'] += $cantidad;
     }
 
     $dir = STORAGE_PATH . '/conteos';
@@ -58,17 +89,31 @@ try {
     $spreadsheet = new Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
     $sheet->setTitle('Consolidado');
-    $sheet->fromArray(['Codigo', 'Descripcion', 'Cantidad total', 'Usuarios'], null, 'A1');
+    $headers = ['Codigo', 'Descripcion'];
+    foreach ($usuarios as $usuario) {
+        $headers[] = $usuario['nombre'];
+    }
+    $headers[] = 'Cantidad total';
+    $sheet->fromArray($headers, null, 'A1');
+    $sheet->getStyle('1:1')->getFont()->setBold(true);
+    $sheet->freezePane('A2');
 
     $row = 2;
-    foreach ($detalles as $detalle) {
-        $sheet->setCellValue("A{$row}", $detalle['codigo']);
-        $sheet->setCellValue("B{$row}", $detalle['descripcion']);
-        $sheet->setCellValue("C{$row}", (float) $detalle['cantidad']);
-        $sheet->setCellValue("D{$row}", $detalle['usuarios']);
+    foreach ($productos as $producto) {
+        $values = [$producto['codigo'], $producto['descripcion']];
+        foreach ($usuarios as $usuario) {
+            $usuarioId = (int) $usuario['id'];
+            $values[] = array_key_exists($usuarioId, $producto['usuarios'])
+                ? $producto['usuarios'][$usuarioId]
+                : '';
+        }
+        $values[] = $producto['total'];
+        $sheet->fromArray($values, null, "A{$row}");
         $row++;
     }
-    foreach (range('A', 'D') as $column) {
+
+    for ($columnIndex = 1; $columnIndex <= count($headers); $columnIndex++) {
+        $column = Coordinate::stringFromColumnIndex($columnIndex);
         $sheet->getColumnDimension($column)->setAutoSize(true);
     }
 
