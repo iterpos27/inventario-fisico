@@ -84,7 +84,7 @@ function escapeHtml(value) {
 
 async function buscarProductos(q) {
   const results = $('resultadosBusqueda');
-  if (q.trim().length < 2) {
+  if (q.trim().length < 3) {
     results.classList.add('d-none');
     results.innerHTML = '';
     return;
@@ -302,7 +302,7 @@ let searchTimer = null;
 $('buscarProducto')?.addEventListener('input', (event) => {
   clearTimeout(searchTimer);
   toggleSearchClear();
-  searchTimer = setTimeout(() => buscarProductos(event.target.value), 220);
+  searchTimer = setTimeout(() => buscarProductos(event.target.value), 420);
 });
 
 $('limpiarBusqueda')?.addEventListener('click', () => {

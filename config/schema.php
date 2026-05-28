@@ -17,6 +17,60 @@ function ensure_column_exists(PDO $pdo, string $table, string $column, string $d
     $pdo->exec("ALTER TABLE {$table} ADD COLUMN {$definition}");
 }
 
+function ensure_index_exists(PDO $pdo, string $table, string $index, string $definition): void
+{
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $table) || !preg_match('/^[a-zA-Z0-9_]+$/', $index)) {
+        throw new InvalidArgumentException('Nombre de tabla o indice invalido');
+    }
+
+    $indexLike = $pdo->quote($index);
+    $stmt = $pdo->query("SHOW INDEX FROM {$table} WHERE Key_name = {$indexLike}");
+    if ($stmt->fetch()) {
+        return;
+    }
+
+    $pdo->exec("ALTER TABLE {$table} ADD {$definition}");
+}
+
+function ensure_foreign_key_exists(PDO $pdo, string $table, string $constraint, string $definition): void
+{
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $table) || !preg_match('/^[a-zA-Z0-9_]+$/', $constraint)) {
+        throw new InvalidArgumentException('Nombre de tabla o llave foranea invalido');
+    }
+
+    $stmt = $pdo->prepare(
+        "SELECT 1
+         FROM information_schema.TABLE_CONSTRAINTS
+         WHERE CONSTRAINT_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+           AND CONSTRAINT_NAME = ?
+           AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+         LIMIT 1"
+    );
+    $stmt->execute([$table, $constraint]);
+    if ($stmt->fetchColumn()) {
+        return;
+    }
+
+    $pdo->exec("ALTER TABLE {$table} ADD CONSTRAINT {$constraint} {$definition}");
+}
+
+function ensure_column_type(PDO $pdo, string $table, string $column, string $type, string $alterSql): void
+{
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $table) || !preg_match('/^[a-zA-Z0-9_]+$/', $column)) {
+        throw new InvalidArgumentException('Nombre de tabla o columna invalido');
+    }
+
+    $columnLike = $pdo->quote($column);
+    $stmt = $pdo->query("SHOW COLUMNS FROM {$table} LIKE {$columnLike}");
+    $current = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($current && strtolower((string) $current['Type']) === strtolower($type)) {
+        return;
+    }
+
+    $pdo->exec($alterSql);
+}
+
 function ensure_schema(PDO $pdo): void
 {
     $pdo->exec(
@@ -163,82 +217,29 @@ function ensure_schema(PDO $pdo): void
     ensure_column_exists($pdo, 'tomas_fisicas', 'hora_inicio', 'hora_inicio TIME NULL AFTER fecha_cierre');
     ensure_column_exists($pdo, 'tomas_fisicas', 'hora_fin', 'hora_fin TIME NULL AFTER hora_inicio');
 
-    try {
-        $pdo->exec('ALTER TABLE tomas_fisicas MODIFY agencia VARCHAR(120) NULL');
-    } catch (Throwable $exception) {
-        // Instalaciones antiguas pueden conservar la definicion previa hasta una migracion manual.
-    }
+    ensure_column_type($pdo, 'tomas_fisicas', 'agencia', 'varchar(120)', 'ALTER TABLE tomas_fisicas MODIFY agencia VARCHAR(120) NULL');
+    ensure_column_type($pdo, 'productos', 'descripcion', 'varchar(1000)', 'ALTER TABLE productos MODIFY descripcion VARCHAR(1000) NOT NULL');
+    ensure_column_type($pdo, 'conteo_detalle', 'descripcion', 'varchar(1000)', 'ALTER TABLE conteo_detalle MODIFY descripcion VARCHAR(1000) NOT NULL');
+    ensure_column_type($pdo, 'tomas_fisicas', 'nombre_toma', 'varchar(500)', 'ALTER TABLE tomas_fisicas MODIFY nombre_toma VARCHAR(500) NOT NULL');
+
+    ensure_index_exists($pdo, 'productos', 'idx_productos_descripcion', 'INDEX idx_productos_descripcion (descripcion(191))');
+    ensure_index_exists($pdo, 'productos', 'idx_productos_estado_codigo', 'INDEX idx_productos_estado_codigo (estado, codigo)');
+    ensure_index_exists($pdo, 'productos', 'idx_productos_estado_descripcion', 'INDEX idx_productos_estado_descripcion (estado, descripcion(191))');
+    ensure_index_exists($pdo, 'conteos', 'idx_conteos_toma', 'INDEX idx_conteos_toma (toma_id)');
+    ensure_index_exists($pdo, 'conteos', 'idx_conteos_usuario_estado', 'INDEX idx_conteos_usuario_estado (usuario_id, estado)');
+    ensure_index_exists($pdo, 'conteo_detalle', 'idx_detalle_producto', 'INDEX idx_detalle_producto (producto_id)');
+    ensure_index_exists($pdo, 'toma_usuarios', 'idx_toma_usuarios_usuario_estado', 'INDEX idx_toma_usuarios_usuario_estado (usuario_id, estado)');
 
     try {
-        $pdo->exec('ALTER TABLE productos DROP INDEX idx_productos_descripcion');
+        ensure_index_exists($pdo, 'conteos', 'uq_conteo_toma_usuario', 'UNIQUE KEY uq_conteo_toma_usuario (toma_id, usuario_id)');
     } catch (Throwable $exception) {
-        // El indice puede no existir o ya estar actualizado.
-    }
-
-    try {
-        $pdo->exec('ALTER TABLE productos DROP INDEX idx_productos_estado_descripcion');
-    } catch (Throwable $exception) {
-        // El indice puede no existir o ya estar actualizado.
-    }
-
-    try {
-        $pdo->exec('ALTER TABLE productos MODIFY descripcion VARCHAR(1000) NOT NULL');
-    } catch (Throwable $exception) {
-        // Si falla, la importacion mostrara el error correspondiente.
+        // Datos antiguos duplicados pueden impedir crear esta restriccion.
     }
 
     try {
-        $pdo->exec('ALTER TABLE conteo_detalle MODIFY descripcion VARCHAR(1000) NOT NULL');
+        ensure_foreign_key_exists($pdo, 'conteos', 'fk_conteos_toma', 'FOREIGN KEY (toma_id) REFERENCES tomas_fisicas(id)');
     } catch (Throwable $exception) {
-        // Si falla, se conserva la definicion existente.
-    }
-
-    foreach ([
-        'ALTER TABLE productos ADD INDEX idx_productos_descripcion (descripcion(191))',
-        'ALTER TABLE productos ADD INDEX idx_productos_estado_codigo (estado, codigo)',
-        'ALTER TABLE productos ADD INDEX idx_productos_estado_descripcion (estado, descripcion(191))',
-    ] as $indexSql) {
-        try {
-            $pdo->exec($indexSql);
-        } catch (Throwable $exception) {
-            // El indice ya puede existir en instalaciones actualizadas.
-        }
-    }
-
-    try {
-        $pdo->exec('ALTER TABLE tomas_fisicas MODIFY nombre_toma VARCHAR(500) NOT NULL');
-    } catch (Throwable $exception) {
-        // La columna puede estar ya actualizada.
-    }
-
-    try {
-        $pdo->exec('ALTER TABLE conteos ADD INDEX idx_conteos_toma (toma_id)');
-    } catch (Throwable $exception) {
-        // El indice ya puede existir en instalaciones actualizadas.
-    }
-
-    foreach ([
-        'ALTER TABLE conteos ADD INDEX idx_conteos_usuario_estado (usuario_id, estado)',
-        'ALTER TABLE conteo_detalle ADD INDEX idx_detalle_producto (producto_id)',
-        'ALTER TABLE toma_usuarios ADD INDEX idx_toma_usuarios_usuario_estado (usuario_id, estado)',
-    ] as $indexSql) {
-        try {
-            $pdo->exec($indexSql);
-        } catch (Throwable $exception) {
-            // El indice ya puede existir en instalaciones actualizadas.
-        }
-    }
-
-    try {
-        $pdo->exec('ALTER TABLE conteos ADD UNIQUE KEY uq_conteo_toma_usuario (toma_id, usuario_id)');
-    } catch (Throwable $exception) {
-        // La restriccion ya puede existir o los datos antiguos pueden impedirla.
-    }
-
-    try {
-        $pdo->exec('ALTER TABLE conteos ADD CONSTRAINT fk_conteos_toma FOREIGN KEY (toma_id) REFERENCES tomas_fisicas(id)');
-    } catch (Throwable $exception) {
-        // La llave foranea ya puede existir o no estar disponible en datos antiguos.
+        // Datos antiguos sin relacion valida pueden impedir crear esta llave.
     }
 
     $seedAdminUser = trim((string) env_value('APP_SEED_ADMIN_USER', ''));

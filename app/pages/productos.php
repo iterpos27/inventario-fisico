@@ -23,6 +23,9 @@ foreach (['zip', 'gd'] as $extension) {
 $excelReady = $phpspreadsheetReady && $missingPhpExtensions === [];
 
 $q = trim((string) ($_GET['q'] ?? ''));
+if ($q !== '' && mb_strlen($q) < 3) {
+    $q = '';
+}
 $page = max(1, (int) ($_GET['page'] ?? 1));
 $perPage = 20;
 $sort = in_array(($_GET['sort'] ?? ''), ['codigo', 'descripcion'], true) ? (string) $_GET['sort'] : 'descripcion';

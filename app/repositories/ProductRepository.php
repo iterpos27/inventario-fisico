@@ -27,13 +27,9 @@ final class ProductRepository
 
         if ($search !== '') {
             $where .= $searchIsCode
-                ? ' AND (codigo = :q_exact OR codigo LIKE :q_codigo)'
-                : ' AND (codigo = :q_exact OR codigo LIKE :q_codigo OR descripcion LIKE :q_descripcion)';
-            $params[':q_exact'] = $search;
-            $params[':q_codigo'] = "{$search}%";
-            if (!$searchIsCode) {
-                $params[':q_descripcion'] = "{$search}%";
-            }
+                ? ' AND codigo LIKE :q_codigo'
+                : ' AND descripcion LIKE :q_descripcion';
+            $params[$searchIsCode ? ':q_codigo' : ':q_descripcion'] = "{$search}%";
         }
 
         $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM productos WHERE {$where}");
