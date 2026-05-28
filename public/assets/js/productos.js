@@ -1,17 +1,13 @@
 const modalEditarProducto = document.getElementById('modalEditarProducto');
 const formBuscarProductoAdmin = document.getElementById('formBuscarProductoAdmin');
 const buscarProductoAdmin = document.getElementById('buscarProductoAdmin');
-let buscarProductoTimer = null;
 
-buscarProductoAdmin?.addEventListener('input', () => {
-  clearTimeout(buscarProductoTimer);
-  buscarProductoTimer = setTimeout(() => {
-    const value = buscarProductoAdmin.value.trim();
-    if (value !== '' && value.length < 3) {
-      return;
-    }
-    formBuscarProductoAdmin?.requestSubmit();
-  }, 850);
+formBuscarProductoAdmin?.addEventListener('submit', (event) => {
+  const value = buscarProductoAdmin?.value.trim() || '';
+  if (value !== '' && value.length < 3) {
+    event.preventDefault();
+    buscarProductoAdmin?.focus();
+  }
 });
 
 modalEditarProducto?.addEventListener('show.bs.modal', (event) => {

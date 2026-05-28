@@ -111,8 +111,9 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
             <input type="hidden" name="sort" value="<?= e($sort) ?>">
             <input type="hidden" name="dir" value="<?= e($direction) ?>">
             <label class="form-label" for="buscarProductoAdmin">Buscar producto</label>
-            <div class="position-relative">
+            <div class="search-row">
                 <input class="form-control form-control-lg search-input" id="buscarProductoAdmin" name="q" value="<?= e($q) ?>" placeholder="Codigo o descripcion" autocomplete="off">
+                <button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-search"></i> Buscar</button>
             </div>
         </form>
     </section>

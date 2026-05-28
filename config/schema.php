@@ -95,7 +95,8 @@ function ensure_schema(PDO $pdo): void
             INDEX idx_productos_descripcion (descripcion(191)),
             INDEX idx_productos_estado (estado),
             INDEX idx_productos_estado_codigo (estado, codigo),
-            INDEX idx_productos_estado_descripcion (estado, descripcion(191))
+            INDEX idx_productos_estado_descripcion (estado, descripcion(191)),
+            FULLTEXT KEY idx_productos_fulltext_descripcion (descripcion)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
 
@@ -225,6 +226,7 @@ function ensure_schema(PDO $pdo): void
     ensure_index_exists($pdo, 'productos', 'idx_productos_descripcion', 'INDEX idx_productos_descripcion (descripcion(191))');
     ensure_index_exists($pdo, 'productos', 'idx_productos_estado_codigo', 'INDEX idx_productos_estado_codigo (estado, codigo)');
     ensure_index_exists($pdo, 'productos', 'idx_productos_estado_descripcion', 'INDEX idx_productos_estado_descripcion (estado, descripcion(191))');
+    ensure_index_exists($pdo, 'productos', 'idx_productos_fulltext_descripcion', 'FULLTEXT KEY idx_productos_fulltext_descripcion (descripcion)');
     ensure_index_exists($pdo, 'conteos', 'idx_conteos_toma', 'INDEX idx_conteos_toma (toma_id)');
     ensure_index_exists($pdo, 'conteos', 'idx_conteos_usuario_estado', 'INDEX idx_conteos_usuario_estado (usuario_id, estado)');
     ensure_index_exists($pdo, 'conteo_detalle', 'idx_detalle_producto', 'INDEX idx_detalle_producto (producto_id)');

@@ -18,6 +18,7 @@ final class ProductRepository
         $where = 'estado = 1';
         $params = [];
         $searchIsCode = $search !== '' && preg_match('/^\d+$/', $search) === 1;
+        $fullTextQuery = $this->fullTextBooleanQuery($search);
         $sortColumns = [
             'codigo' => 'codigo',
             'descripcion' => 'descripcion',
@@ -26,10 +27,16 @@ final class ProductRepository
         $sortDirection = strtolower($direction) === 'desc' ? 'DESC' : 'ASC';
 
         if ($search !== '') {
-            $where .= $searchIsCode
-                ? " AND codigo LIKE :q_codigo ESCAPE '!'"
-                : " AND descripcion LIKE :q_descripcion ESCAPE '!'";
-            $params[$searchIsCode ? ':q_codigo' : ':q_descripcion'] = $this->likePattern($search, !$searchIsCode);
+            if ($searchIsCode) {
+                $where .= " AND codigo LIKE :q_codigo ESCAPE '!'";
+                $params[':q_codigo'] = $this->likePattern($search, false);
+            } elseif ($fullTextQuery !== '') {
+                $where .= ' AND MATCH(descripcion) AGAINST(:q_fulltext IN BOOLEAN MODE)';
+                $params[':q_fulltext'] = $fullTextQuery;
+            } else {
+                $where .= " AND descripcion LIKE :q_descripcion ESCAPE '!'";
+                $params[':q_descripcion'] = $this->likePattern($search, true);
+            }
         }
 
         $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM productos WHERE {$where}");
@@ -86,6 +93,25 @@ final class ProductRepository
             );
             $stmt->bindValue(':q', $this->likePattern($search, false));
         } else {
+            $fullTextQuery = $this->fullTextBooleanQuery($search);
+            if ($fullTextQuery !== '') {
+                $stmt = $this->pdo->prepare(
+                    "SELECT id, codigo, descripcion,
+                            MATCH(descripcion) AGAINST(:q_score IN BOOLEAN MODE) AS relevancia
+                     FROM productos
+                     WHERE estado = 1
+                       AND MATCH(descripcion) AGAINST(:q_match IN BOOLEAN MODE)
+                     ORDER BY relevancia DESC, descripcion, codigo
+                     LIMIT :limit"
+                );
+                $stmt->bindValue(':q_score', $fullTextQuery);
+                $stmt->bindValue(':q_match', $fullTextQuery);
+                $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+                $stmt->execute();
+
+                return $stmt->fetchAll();
+            }
+
             $stmt = $this->pdo->prepare(
                 "SELECT id, codigo, descripcion
                  FROM productos
@@ -128,5 +154,21 @@ final class ProductRepository
         ]);
 
         return $contains ? "%{$escaped}%" : "{$escaped}%";
+    }
+
+    private function fullTextBooleanQuery(string $value): string
+    {
+        $clean = preg_replace('/[+\-<>()~*"@]+/u', ' ', $value) ?? '';
+        $terms = preg_split('/\s+/u', trim($clean), -1, PREG_SPLIT_NO_EMPTY);
+        $terms = array_values(array_filter(array_map(
+            static fn (string $term): string => trim($term),
+            $terms ?: []
+        ), static fn (string $term): bool => mb_strlen($term) >= 3));
+
+        if (!$terms) {
+            return '';
+        }
+
+        return implode(' ', array_map(static fn (string $term): string => '+' . $term . '*', $terms));
     }
 }

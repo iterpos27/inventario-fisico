@@ -82,16 +82,40 @@ function escapeHtml(value) {
   }[char]));
 }
 
+let searchAbortController = null;
+let searchRequestId = 0;
+
 async function buscarProductos(q) {
   const results = $('resultadosBusqueda');
-  if (q.trim().length < 3) {
+  const term = q.trim();
+  const requestId = searchRequestId + 1;
+  searchRequestId = requestId;
+
+  if (searchAbortController) {
+    searchAbortController.abort();
+  }
+
+  if (term.length < 3) {
     results.classList.add('d-none');
     results.innerHTML = '';
     return;
   }
 
-  const response = await fetch(`${baseUrl}/actions/buscar_producto?q=${encodeURIComponent(q)}`);
-  const products = await response.json();
+  searchAbortController = new AbortController();
+  let products = [];
+  try {
+    const response = await fetch(`${baseUrl}/actions/buscar_producto?q=${encodeURIComponent(term)}`, {
+      signal: searchAbortController.signal,
+    });
+    products = await response.json();
+  } catch (error) {
+    if (error.name === 'AbortError') return;
+    results.innerHTML = '<div class="search-result text-danger">No se pudo buscar. Intente de nuevo.</div>';
+    results.classList.remove('d-none');
+    return;
+  }
+
+  if (requestId !== searchRequestId) return;
   results.innerHTML = '';
 
   for (const product of products) {
@@ -417,6 +441,10 @@ function toggleSearchClear() {
 
 function clearSearch() {
   const input = $('buscarProducto');
+  if (searchAbortController) {
+    searchAbortController.abort();
+  }
+  searchRequestId += 1;
   if (input) input.value = '';
   $('resultadosBusqueda')?.classList.add('d-none');
   if ($('resultadosBusqueda')) $('resultadosBusqueda').innerHTML = '';
