@@ -25,7 +25,9 @@ $excelReady = $phpspreadsheetReady && $missingPhpExtensions === [];
 $q = trim((string) ($_GET['q'] ?? ''));
 $page = max(1, (int) ($_GET['page'] ?? 1));
 $perPage = 20;
-$productosPage = (new ProductRepository($pdo))->paginateActive($q, $page, $perPage);
+$sort = in_array(($_GET['sort'] ?? ''), ['codigo', 'descripcion'], true) ? (string) $_GET['sort'] : 'descripcion';
+$direction = ($_GET['dir'] ?? '') === 'desc' ? 'desc' : 'asc';
+$productosPage = (new ProductRepository($pdo))->paginateActive($q, $page, $perPage, $sort, $direction);
 $productos = $productosPage['items'];
 $totalProductos = $productosPage['total'];
 $totalPages = max(1, (int) ceil($totalProductos / $perPage));
@@ -37,8 +39,32 @@ $queryBase = [];
 if ($q !== '') {
     $queryBase['q'] = $q;
 }
+if ($sort !== 'descripcion' || $direction !== 'asc') {
+    $queryBase['sort'] = $sort;
+    $queryBase['dir'] = $direction;
+}
 $prevUrl = page_url('productos', $queryBase + ['page' => max(1, $page - 1)]);
 $nextUrl = page_url('productos', $queryBase + ['page' => min($totalPages, $page + 1)]);
+
+$sortUrl = static function (string $column) use ($q, $sort, $direction): string {
+    $nextDirection = $sort === $column && $direction === 'asc' ? 'desc' : 'asc';
+    $params = [
+        'sort' => $column,
+        'dir' => $nextDirection,
+    ];
+    if ($q !== '') {
+        $params['q'] = $q;
+    }
+
+    return page_url('productos', $params);
+};
+$sortIcon = static function (string $column) use ($sort, $direction): string {
+    if ($sort !== $column) {
+        return 'bi-arrow-down-up';
+    }
+
+    return $direction === 'asc' ? 'bi-sort-down' : 'bi-sort-up';
+};
 
 $errorMessage = trim((string) ($_GET['error'] ?? ''));
 if ($excelReady && str_contains($errorMessage, 'composer require phpoffice/phpspreadsheet')) {
@@ -79,6 +105,8 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
 
     <section class="count-tool mb-3">
         <form action="<?= page_url('productos') ?>" method="get" id="formBuscarProductoAdmin">
+            <input type="hidden" name="sort" value="<?= e($sort) ?>">
+            <input type="hidden" name="dir" value="<?= e($direction) ?>">
             <label class="form-label" for="buscarProductoAdmin">Buscar producto</label>
             <div class="position-relative">
                 <input class="form-control form-control-lg search-input" id="buscarProductoAdmin" name="q" value="<?= e($q) ?>" placeholder="Codigo o descripcion" autocomplete="off">
@@ -95,8 +123,16 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
             <table class="table align-middle">
                 <thead>
                     <tr>
-                        <th>Codigo</th>
-                        <th>Descripcion</th>
+                        <th>
+                            <a class="table-sort-link" href="<?= e($sortUrl('codigo')) ?>">
+                                Codigo <i class="bi <?= e($sortIcon('codigo')) ?>"></i>
+                            </a>
+                        </th>
+                        <th>
+                            <a class="table-sort-link" href="<?= e($sortUrl('descripcion')) ?>">
+                                Descripcion <i class="bi <?= e($sortIcon('descripcion')) ?>"></i>
+                            </a>
+                        </th>
                         <th class="text-end">Acciones</th>
                     </tr>
                 </thead>

@@ -11,13 +11,19 @@ final class ProductRepository
     /**
      * @return array{items: array<int, array<string, mixed>>, total: int}
      */
-    public function paginateActive(string $search, int $page, int $perPage): array
+    public function paginateActive(string $search, int $page, int $perPage, string $sort = 'descripcion', string $direction = 'asc'): array
     {
         $page = max(1, $page);
         $perPage = max(1, min(100, $perPage));
         $where = 'estado = 1';
         $params = [];
         $searchIsCode = $search !== '' && preg_match('/^\d+$/', $search) === 1;
+        $sortColumns = [
+            'codigo' => 'codigo',
+            'descripcion' => 'descripcion',
+        ];
+        $sortColumn = $sortColumns[$sort] ?? 'descripcion';
+        $sortDirection = strtolower($direction) === 'desc' ? 'DESC' : 'ASC';
 
         if ($search !== '') {
             $where .= $searchIsCode
@@ -45,20 +51,13 @@ final class ProductRepository
              FROM productos
              WHERE {$where}
              ORDER BY
-                CASE
-                    WHEN codigo = :sort_exact THEN 0
-                    WHEN codigo LIKE :sort_codigo THEN 1
-                    ELSE 2
-                END,
-                descripcion,
-                codigo
+                {$sortColumn} {$sortDirection},
+                id ASC
              LIMIT :limit OFFSET :offset"
         );
         foreach ($params as $key => $value) {
             $stmt->bindValue($key, $value);
         }
-        $stmt->bindValue(':sort_exact', $search);
-        $stmt->bindValue(':sort_codigo', "{$search}%");
         $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
