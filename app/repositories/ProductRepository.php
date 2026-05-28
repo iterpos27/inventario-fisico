@@ -17,11 +17,17 @@ final class ProductRepository
         $perPage = max(1, min(100, $perPage));
         $where = 'estado = 1';
         $params = [];
+        $searchIsCode = $search !== '' && preg_match('/^\d+$/', $search) === 1;
 
         if ($search !== '') {
-            $where .= ' AND (codigo LIKE :q_codigo OR descripcion LIKE :q_descripcion)';
-            $params[':q_codigo'] = "%{$search}%";
-            $params[':q_descripcion'] = "%{$search}%";
+            $where .= $searchIsCode
+                ? ' AND (codigo = :q_exact OR codigo LIKE :q_codigo)'
+                : ' AND (codigo = :q_exact OR codigo LIKE :q_codigo OR descripcion LIKE :q_descripcion)';
+            $params[':q_exact'] = $search;
+            $params[':q_codigo'] = "{$search}%";
+            if (!$searchIsCode) {
+                $params[':q_descripcion'] = "{$search}%";
+            }
         }
 
         $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM productos WHERE {$where}");
@@ -38,12 +44,21 @@ final class ProductRepository
             "SELECT id, codigo, descripcion
              FROM productos
              WHERE {$where}
-             ORDER BY descripcion, codigo
+             ORDER BY
+                CASE
+                    WHEN codigo = :sort_exact THEN 0
+                    WHEN codigo LIKE :sort_codigo THEN 1
+                    ELSE 2
+                END,
+                descripcion,
+                codigo
              LIMIT :limit OFFSET :offset"
         );
         foreach ($params as $key => $value) {
             $stmt->bindValue($key, $value);
         }
+        $stmt->bindValue(':sort_exact', $search);
+        $stmt->bindValue(':sort_codigo', "{$search}%");
         $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();

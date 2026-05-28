@@ -40,6 +40,7 @@ function ensure_schema(PDO $pdo): void
             fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_productos_descripcion (descripcion(191)),
             INDEX idx_productos_estado (estado),
+            INDEX idx_productos_estado_codigo (estado, codigo),
             INDEX idx_productos_estado_descripcion (estado, descripcion(191))
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
@@ -194,6 +195,7 @@ function ensure_schema(PDO $pdo): void
 
     foreach ([
         'ALTER TABLE productos ADD INDEX idx_productos_descripcion (descripcion(191))',
+        'ALTER TABLE productos ADD INDEX idx_productos_estado_codigo (estado, codigo)',
         'ALTER TABLE productos ADD INDEX idx_productos_estado_descripcion (estado, descripcion(191))',
     ] as $indexSql) {
         try {

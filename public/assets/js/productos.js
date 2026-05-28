@@ -6,8 +6,12 @@ let buscarProductoTimer = null;
 buscarProductoAdmin?.addEventListener('input', () => {
   clearTimeout(buscarProductoTimer);
   buscarProductoTimer = setTimeout(() => {
+    const value = buscarProductoAdmin.value.trim();
+    if (value !== '' && value.length < 2) {
+      return;
+    }
     formBuscarProductoAdmin?.requestSubmit();
-  }, 420);
+  }, 650);
 });
 
 modalEditarProducto?.addEventListener('show.bs.modal', (event) => {
