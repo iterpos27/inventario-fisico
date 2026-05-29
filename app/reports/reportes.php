@@ -3,8 +3,10 @@ require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 require_once APP_INCLUDES_PATH . '/observability.php';
 require_once APP_INCLUDES_PATH . '/toma_summary.php';
+require_once APP_INCLUDES_PATH . '/toma_lifecycle.php';
 require_permission('reports');
 $reportStartedAt = microtime(true);
+cerrar_tomas_vencidas($pdo);
 
 $fechaDesde = $_GET['fecha_desde'] ?? date('Y-m-01');
 $fechaHasta = $_GET['fecha_hasta'] ?? date('Y-m-d');

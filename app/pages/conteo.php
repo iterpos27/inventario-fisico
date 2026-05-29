@@ -1,7 +1,9 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
+require_once APP_INCLUDES_PATH . '/toma_lifecycle.php';
 require_login();
+cerrar_tomas_vencidas($pdo);
 
 $conteoId = (int) ($_GET['id'] ?? 0);
 $conteo = null;
@@ -22,7 +24,7 @@ foreach ($stmt->fetchAll() as $row) {
 $defaultToma = $defaultYear . '-' . str_pad((string) $nextSequence, 3, '0', STR_PAD_LEFT);
 
 if ($conteoId > 0) {
-    $sql = 'SELECT c.*, t.numero_toma, t.agencia, t.fecha_toma
+    $sql = 'SELECT c.*, t.numero_toma, t.agencia, t.fecha_toma, t.estado AS toma_estado
             FROM conteos c
             LEFT JOIN tomas_fisicas t ON t.id = c.toma_id
             WHERE c.id = ? AND c.usuario_id = ?';
@@ -31,7 +33,7 @@ if ($conteoId > 0) {
     $stmt->execute($params);
     $conteo = $stmt->fetch();
 
-    if (!$conteo || $conteo['estado'] === 'finalizado') {
+    if (!$conteo || $conteo['estado'] === 'finalizado' || $conteo['toma_estado'] !== 'abierta') {
         header('Location: ' . page_url('conteo'));
         exit;
     }

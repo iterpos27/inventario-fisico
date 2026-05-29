@@ -56,6 +56,7 @@ $actions = [
     'iniciar_conteo' => APP_PATH . '/actions/iniciar_conteo.php',
     'login_procesar' => APP_PATH . '/actions/login_procesar.php',
     'logo_procesar' => APP_PATH . '/actions/logo_procesar.php',
+    'reutilizar_toma' => APP_PATH . '/actions/reutilizar_toma.php',
 ];
 
 $apiRoutes = [

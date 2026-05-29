@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 require_once APP_INCLUDES_PATH . '/toma_window.php';
+require_once APP_INCLUDES_PATH . '/toma_lifecycle.php';
 
 $user = api_require_user($pdo);
 $payload = api_payload();
@@ -10,6 +11,7 @@ if ($tomaId <= 0) {
 }
 
 try {
+    cerrar_tomas_vencidas($pdo, $tomaId);
     $pdo->beginTransaction();
 
     $stmt = $pdo->prepare(

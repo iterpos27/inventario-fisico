@@ -1,6 +1,7 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
+require_once APP_INCLUDES_PATH . '/toma_lifecycle.php';
 require_admin();
 
 $tomaId = (int) ($_GET['id'] ?? 0);
@@ -8,6 +9,7 @@ if ($tomaId <= 0) {
     header('Location: ' . page_url('reportes'));
     exit;
 }
+cerrar_tomas_vencidas($pdo, $tomaId);
 
 $stmt = $pdo->prepare(
     "SELECT t.*, u.nombre AS creado_por_nombre
@@ -90,6 +92,9 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     <?php if (!empty($_GET['msg']) && $_GET['msg'] === 'toma_actualizada'): ?>
         <div class="alert alert-success">Toma actualizada correctamente.</div>
     <?php endif; ?>
+    <?php if (!empty($_GET['msg']) && $_GET['msg'] === 'toma_reutilizada'): ?>
+        <div class="alert alert-success">Toma reutilizada correctamente. Se creo una nueva toma vacia con los mismos usuarios.</div>
+    <?php endif; ?>
     <?php if (!empty($_GET['error']) && $_GET['error'] === 'edicion'): ?>
         <div class="alert alert-danger">No se pudo habilitar el conteo.</div>
     <?php endif; ?>
@@ -105,6 +110,9 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
     <?php if (!empty($_GET['error']) && $_GET['error'] === 'eliminar_toma'): ?>
         <div class="alert alert-danger">No se pudo eliminar la toma. Solo se eliminan tomas sin productos contados.</div>
     <?php endif; ?>
+    <?php if (!empty($_GET['error']) && $_GET['error'] === 'reutilizar_toma'): ?>
+        <div class="alert alert-danger">No se pudo reutilizar la toma. Revise fechas y horas.</div>
+    <?php endif; ?>
 
     <div class="page-heading">
         <div>
@@ -114,6 +122,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
         <div class="quick-actions">
             <a class="btn btn-outline-primary" href="<?= page_url('conteo') ?>"><i class="bi bi-arrow-left"></i> Volver</a>
             <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalEditarToma"><i class="bi bi-pencil"></i> Editar</button>
+            <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalReutilizarToma"><i class="bi bi-files"></i> Reutilizar</button>
             <form method="post" action="<?= action_url('cambiar_estado_toma') ?>" onsubmit="return confirm('<?= $toma['estado'] === 'abierta' ? 'Cerrar esta toma? Los usuarios no podran seguir editando.' : 'Reabrir esta toma para permitir edicion?' ?>');">
                 <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="toma_id" value="<?= (int) $toma['id'] ?>">
@@ -132,6 +141,8 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
             <?php endif; ?>
             <?php if ($lineas === 0): ?>
                 <button class="btn btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#modalEliminarToma"><i class="bi bi-trash"></i> Eliminar</button>
+            <?php else: ?>
+                <button class="btn btn-outline-secondary" type="button" disabled title="Solo se eliminan tomas sin productos contados"><i class="bi bi-trash"></i> Eliminar</button>
             <?php endif; ?>
         </div>
     </div>
@@ -316,6 +327,46 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
                 <div class="modal-footer">
                     <button class="btn btn-outline-primary" type="button" data-bs-dismiss="modal">Cancelar</button>
                     <button class="btn btn-primary" type="submit">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalReutilizarToma" tabindex="-1" aria-labelledby="modalReutilizarTomaTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="<?= action_url('reutilizar_toma') ?>">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="modalReutilizarTomaTitulo">Reutilizar toma</h2>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                    <input type="hidden" name="toma_id" value="<?= (int) $toma['id'] ?>">
+                    <p class="text-secondary">Se creara una toma nueva vacia con la misma agencia y los mismos usuarios asignados.</p>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="reutilizarFechaHabilitacion">Fecha habilitacion</label>
+                            <input class="form-control" id="reutilizarFechaHabilitacion" type="date" name="fecha_habilitacion" value="<?= e(date('Y-m-d')) ?>" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="reutilizarHoraInicio">Hora inicio</label>
+                            <input class="form-control" id="reutilizarHoraInicio" type="time" name="hora_inicio" value="08:00" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="reutilizarFechaCierre">Fecha finalizacion</label>
+                            <input class="form-control" id="reutilizarFechaCierre" type="date" name="fecha_cierre" value="<?= e(date('Y-m-d')) ?>" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="reutilizarHoraFin">Hora fin</label>
+                            <input class="form-control" id="reutilizarHoraFin" type="time" name="hora_fin" value="18:00" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-primary" type="button" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary" type="submit">Crear nueva toma</button>
                 </div>
             </form>
         </div>

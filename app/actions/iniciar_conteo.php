@@ -1,6 +1,7 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
+require_once APP_INCLUDES_PATH . '/toma_lifecycle.php';
 require_once APP_INCLUDES_PATH . '/toma_window.php';
 require_login();
 
@@ -21,6 +22,7 @@ if ($tomaId <= 0) {
 }
 
 try {
+    cerrar_tomas_vencidas($pdo, $tomaId);
     $pdo->beginTransaction();
 
     $stmt = $pdo->prepare(

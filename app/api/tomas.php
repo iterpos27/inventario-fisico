@@ -1,7 +1,9 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+require_once APP_INCLUDES_PATH . '/toma_lifecycle.php';
 
 $user = api_require_user($pdo);
+cerrar_tomas_vencidas($pdo);
 
 $stmt = $pdo->prepare(
     "SELECT t.id AS toma_id, t.numero_toma, t.nombre_toma, t.agencia, t.estado AS toma_estado,
@@ -11,7 +13,7 @@ $stmt = $pdo->prepare(
      FROM toma_usuarios tu
      INNER JOIN tomas_fisicas t ON t.id = tu.toma_id
      LEFT JOIN conteos c ON c.toma_id = tu.toma_id AND c.usuario_id = tu.usuario_id
-     WHERE tu.usuario_id = ?
+     WHERE tu.usuario_id = ? AND t.estado = 'abierta'
      ORDER BY t.id DESC"
 );
 $stmt->execute([(int) $user['id']]);
