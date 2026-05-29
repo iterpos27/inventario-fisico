@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -33,7 +35,15 @@ class ApiClient {
   final FlutterSecureStorage _secureStorage;
   String? _token;
 
-  String get baseUrl => _prefs.getString(_baseUrlKey) ?? 'https://10.0.2.2/centro_ruliman_inventario';
+  String get baseUrl {
+    final stored = _prefs.getString(_baseUrlKey);
+    if (stored == null ||
+        stored == 'https://10.0.2.2/centro_ruliman_inventario') {
+      return 'http://10.0.2.2/centro_ruliman_inventario';
+    }
+    return stored;
+  }
+
   String? get token => _token;
   bool get hasToken => token != null && token!.isNotEmpty;
 
@@ -59,11 +69,14 @@ class ApiClient {
     required String baseUrl,
   }) async {
     await setBaseUrl(baseUrl);
-    final data = await _post('/api/v1/login', {
-      'usuario': usuario,
-      'password': password,
-      'device': 'Flutter Android',
-    }, authenticated: false);
+    final data = await _post(
+        '/api/v1/login',
+        {
+          'usuario': usuario,
+          'password': password,
+          'device': 'Flutter Android',
+        },
+        authenticated: false);
     _token = '${data['token']}';
     await _secureStorage.write(key: _tokenKey, value: _token);
     await _prefs.remove(_tokenKey);
@@ -97,7 +110,8 @@ class ApiClient {
   Future<ConteoDetalleSnapshot> fetchDetalle(int conteoId) async {
     final data = await _get('/api/v1/detalle_conteo?conteo_id=$conteoId');
     final items = (data['items'] as List? ?? [])
-        .map((item) => ConteoItem.fromJson(Map<String, dynamic>.from(item as Map)))
+        .map((item) =>
+            ConteoItem.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList();
 
     return ConteoDetalleSnapshot(
@@ -107,22 +121,27 @@ class ApiClient {
   }
 
   Future<List<Producto>> buscarProductos(String q) async {
-    final data = await _get('/api/v1/productos?q=${Uri.encodeQueryComponent(q)}');
+    final data =
+        await _get('/api/v1/productos?q=${Uri.encodeQueryComponent(q)}');
     return (data['productos'] as List? ?? [])
-        .map((item) => Producto.fromJson(Map<String, dynamic>.from(item as Map)))
+        .map(
+            (item) => Producto.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList();
   }
 
-  Future<int> guardarBorrador(int conteoId, List<ConteoItem> items, int conteoVersion) async {
+  Future<int> guardarBorrador(
+      int conteoId, List<ConteoItem> items, int conteoVersion) async {
     final data = await _post('/api/v1/guardar_borrador', {
       'conteo_id': conteoId,
       'conteo_version': conteoVersion,
       'items': items.map((item) => item.toJson()).toList(),
     });
-    return int.tryParse('${data['conteo_version'] ?? conteoVersion}') ?? conteoVersion;
+    return int.tryParse('${data['conteo_version'] ?? conteoVersion}') ??
+        conteoVersion;
   }
 
-  Future<String?> finalizarConteo(int conteoId, List<ConteoItem> items, int conteoVersion) async {
+  Future<String?> finalizarConteo(
+      int conteoId, List<ConteoItem> items, int conteoVersion) async {
     final data = await _post('/api/v1/finalizar_conteo', {
       'conteo_id': conteoId,
       'conteo_version': conteoVersion,
@@ -133,10 +152,21 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> _get(String path) async {
-    final response = await http
-        .get(Uri.parse('$baseUrl$path'), headers: _headers())
-        .timeout(const Duration(seconds: 15));
-    return _decode(response);
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl$path'), headers: _headers())
+          .timeout(const Duration(seconds: 15));
+      return _decode(response);
+    } on HandshakeException {
+      throw const ApiException(
+          'Error SSL. Para XAMPP/local use http:// en la URL del servidor.');
+    } on SocketException {
+      throw const ApiException(
+          'No se pudo conectar al servidor. Revise la URL y la red.');
+    } on TimeoutException {
+      throw const ApiException(
+          'Tiempo de espera agotado. Revise la conexion al servidor.');
+    }
   }
 
   Future<Map<String, dynamic>> _post(
@@ -144,14 +174,25 @@ class ApiClient {
     Map<String, dynamic> body, {
     bool authenticated = true,
   }) async {
-    final response = await http
-        .post(
-          Uri.parse('$baseUrl$path'),
-          headers: _headers(authenticated: authenticated),
-          body: jsonEncode(body),
-        )
-        .timeout(const Duration(seconds: 15));
-    return _decode(response);
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl$path'),
+            headers: _headers(authenticated: authenticated),
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 15));
+      return _decode(response);
+    } on HandshakeException {
+      throw const ApiException(
+          'Error SSL. Para XAMPP/local use http:// en la URL del servidor.');
+    } on SocketException {
+      throw const ApiException(
+          'No se pudo conectar al servidor. Revise la URL y la red.');
+    } on TimeoutException {
+      throw const ApiException(
+          'Tiempo de espera agotado. Revise la conexion al servidor.');
+    }
   }
 
   Map<String, String> _headers({bool authenticated = true}) {

@@ -4,6 +4,7 @@
     <application
         android:label="centro_ruliman_conteo"
         android:name="${applicationName}"
+        android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

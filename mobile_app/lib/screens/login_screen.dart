@@ -74,7 +74,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               child: const Text(
                 'CR',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
               ),
             ),
             const SizedBox(height: 24),
@@ -97,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: _baseUrl,
               decoration: const InputDecoration(
                 labelText: 'URL del servidor',
-                hintText: 'https://10.0.2.2/centro_ruliman_inventario',
+                hintText: 'http://10.0.2.2/centro_ruliman_inventario',
               ),
               keyboardType: TextInputType.url,
             ),
