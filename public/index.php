@@ -50,6 +50,8 @@ $actions = [
     'generar_consolidado' => APP_PATH . '/actions/generar_consolidado.php',
     'habilitar_conteo_usuario' => APP_PATH . '/actions/habilitar_conteo_usuario.php',
     'importar_productos' => APP_PATH . '/actions/importar_productos.php',
+    'import_job_process' => APP_PATH . '/actions/import_job_process.php',
+    'import_job_status' => APP_PATH . '/actions/import_job_status.php',
     'importar_productos_procesar' => APP_PATH . '/actions/importar_productos_procesar.php',
     'iniciar_conteo' => APP_PATH . '/actions/iniciar_conteo.php',
     'login_procesar' => APP_PATH . '/actions/login_procesar.php',
@@ -83,7 +85,11 @@ if ($action === '' && $parent === 'actions') {
 }
 
 $apiRoute = '';
+$apiVersion = '';
 if ($parent === 'api') {
+    $apiRoute = basename($route, '.php');
+} elseif (count($segments) >= 3 && $segments[count($segments) - 3] === 'api' && preg_match('/^v\d+$/', $parent)) {
+    $apiVersion = $parent;
     $apiRoute = basename($route, '.php');
 }
 
@@ -94,7 +100,10 @@ if ($apiRoute !== '') {
         echo json_encode(['ok' => false, 'message' => 'Endpoint no encontrado']);
         exit;
     }
-    define('CURRENT_ROUTE', 'api/' . $apiRoute);
+    define('CURRENT_ROUTE', 'api/' . ($apiVersion !== '' ? $apiVersion . '/' : '') . $apiRoute);
+    if ($apiVersion !== '') {
+        define('CURRENT_API_VERSION', $apiVersion);
+    }
     require $apiRoutes[$apiRoute];
     exit;
 }
@@ -116,7 +125,15 @@ if ($route !== '' && $route !== 'index.php') {
     $page = (string) ($_GET['page'] ?? '');
 }
 if ($page === '') {
-    $page = is_logged_in() ? (current_user_role() === 'admin' ? 'dashboard' : 'conteo') : 'login';
+    if (!is_logged_in()) {
+        $page = 'login';
+    } elseif (role_can(current_user_role(), 'admin')) {
+        $page = 'dashboard';
+    } elseif (current_user_can('reports')) {
+        $page = 'reportes';
+    } else {
+        $page = 'conteo';
+    }
 }
 
 if (!isset($pages[$page])) {

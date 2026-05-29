@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/permissions.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     $secureCookie = env_value('APP_FORCE_HTTPS', '0') === '1' || (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
     session_set_cookie_params([
@@ -53,7 +55,7 @@ function require_login(): void
 function require_admin(): void
 {
     require_login();
-    if (($_SESSION['rol'] ?? '') !== 'admin') {
+    if (!role_can($_SESSION['rol'] ?? 'usuario', 'admin')) {
         header('Location: ' . page_url('dashboard'));
         exit;
     }

@@ -1,6 +1,8 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
+require_once APP_INCLUDES_PATH . '/observability.php';
+require_once APP_INCLUDES_PATH . '/toma_summary.php';
 require_admin();
 
 $tomaId = (int) ($_POST['toma_id'] ?? 0);
@@ -34,7 +36,7 @@ try {
     $stmt = $pdo->prepare(
         "SELECT id
          FROM usuarios
-         WHERE rol = 'usuario'
+         WHERE rol IN ('usuario', 'operador')
            AND estado = 1
            AND id IN ({$placeholders})
            AND id NOT IN (
@@ -52,14 +54,16 @@ try {
     foreach ($usuarios as $usuario) {
         $stmtAsignar->execute([$tomaId, (int) $usuario['id']]);
     }
+    refresh_toma_summary($pdo, $tomaId);
 
     $pdo->commit();
+    audit_log($pdo, 'assign_users', 'toma', $tomaId, ['usuarios' => array_column($usuarios, 'id')]);
     header('Location: ' . page_url('toma_detalle', ['id' => $tomaId, 'msg' => 'asignacion']));
 } catch (Throwable $exception) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    app_log($pdo, 'error', 'assign_users_failed', 'No se pudo asignar usuarios a toma', ['toma_id' => $tomaId, 'error' => $exception->getMessage()]);
     header('Location: ' . page_url('toma_detalle', ['id' => $tomaId, 'error' => 'asignacion']));
 }
 exit;
-

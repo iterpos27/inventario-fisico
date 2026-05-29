@@ -46,6 +46,7 @@ if (function_exists('is_logged_in') && is_logged_in()) {
             <link href="<?= asset_url('css/' . $roleStylesheet) ?>?v=<?= e((string) filemtime($roleStylePath)) ?>" rel="stylesheet">
         <?php endif; ?>
     <?php endforeach; ?>
+    <script>window.BASE_URL = '<?= e(BASE_URL) ?>';</script>
 </head>
 <body class="<?= e($bodyRoleClass) ?>">
 

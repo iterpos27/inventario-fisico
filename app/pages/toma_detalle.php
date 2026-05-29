@@ -42,7 +42,7 @@ $participantes = $stmt->fetchAll();
 $stmt = $pdo->prepare(
     "SELECT id, nombre, usuario
      FROM usuarios
-     WHERE rol = 'usuario'
+     WHERE rol IN ('usuario', 'operador')
        AND estado = 1
        AND id NOT IN (
            SELECT usuario_id FROM toma_usuarios WHERE toma_id = ?

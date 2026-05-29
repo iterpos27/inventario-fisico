@@ -68,7 +68,7 @@ if (current_user_role() === 'admin' && $conteoId === 0) {
     $usuariosParticipantes = $pdo->query(
         "SELECT id, nombre, usuario
          FROM usuarios
-         WHERE rol = 'usuario' AND estado = 1
+         WHERE rol IN ('usuario', 'operador') AND estado = 1
          ORDER BY nombre"
     )->fetchAll();
 

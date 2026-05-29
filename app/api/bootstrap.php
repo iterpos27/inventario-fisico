@@ -3,6 +3,7 @@ require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 require_once APP_INCLUDES_PATH . '/conteo_items.php';
 require_once APP_INCLUDES_PATH . '/excel_exports.php';
+require_once APP_INCLUDES_PATH . '/observability.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
@@ -63,7 +64,7 @@ function api_current_user(PDO $pdo): array
 function api_require_user(PDO $pdo): array
 {
     $user = api_current_user($pdo);
-    if ($user['rol'] !== 'usuario') {
+    if (!role_can((string) $user['rol'], 'api_count')) {
         api_json(['ok' => false, 'message' => 'Disponible solo para usuarios de conteo'], 403);
     }
 

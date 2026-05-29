@@ -1,6 +1,7 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
+require_once APP_INCLUDES_PATH . '/observability.php';
 require_once APP_PATH . '/repositories/ProductRepository.php';
 require_login();
 
@@ -12,6 +13,9 @@ if (mb_strlen($q) < 3) {
     exit;
 }
 
-echo json_encode((new ProductRepository($pdo))->searchActive($q, 20), JSON_UNESCAPED_UNICODE);
+$startedAt = microtime(true);
+$results = (new ProductRepository($pdo))->searchActive($q, 20);
+monitor_duration($pdo, 'product_search_web', $startedAt, 500, ['q' => $q, 'results' => count($results)]);
+echo json_encode($results, JSON_UNESCAPED_UNICODE);
 
 

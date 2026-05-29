@@ -45,29 +45,31 @@ $layoutStarted = true;
         </a>
 
         <nav class="sidebar-nav" aria-label="Menu principal">
-            <?php if (current_user_role() === 'admin'): ?>
+            <?php if (role_can(current_user_role(), 'admin')): ?>
             <a class="sidebar-link<?= nav_active('dashboard.php', $currentPage) ?>" href="<?= page_url('dashboard') ?>"><i class="bi bi-speedometer2 icon-panel"></i><span>Dashboard</span></a>
             <?php endif; ?>
 
-            <?php if (current_user_role() === 'admin'): ?>
+            <?php if (role_can(current_user_role(), 'admin')): ?>
             <details class="nav-section nav-count<?= nav_section_class(['conteo.php', 'toma_detalle.php'], $currentPage) ?>"<?= nav_section_open(['conteo.php', 'toma_detalle.php'], $currentPage) ?>>
                 <summary><i class="bi bi-clipboard-check icon-count"></i><span>Conteo y Borradores</span><i class="bi bi-chevron-down nav-chevron"></i></summary>
                 <div class="nav-submenu">
                     <a class="sidebar-sublink<?= nav_active('conteo.php', $currentPage) ?>" href="<?= page_url('conteo') ?>">Nuevo conteo</a>
                 </div>
             </details>
-            <?php else: ?>
+            <?php elseif (current_user_can('count')): ?>
             <a class="sidebar-link<?= nav_active('conteo.php', $currentPage) ?>" href="<?= page_url('conteo') ?>"><i class="bi bi-clipboard-check icon-count"></i><span>Conteos disponibles</span></a>
             <?php endif; ?>
 
-            <?php if (current_user_role() === 'admin'): ?>
+            <?php if (current_user_can('reports')): ?>
             <details class="nav-section nav-reports<?= nav_section_class(['reportes.php'], $currentPage) ?>"<?= nav_section_open(['reportes.php'], $currentPage) ?>>
                 <summary><i class="bi bi-file-earmark-spreadsheet icon-reports"></i><span>Reportes</span><i class="bi bi-chevron-down nav-chevron"></i></summary>
                 <div class="nav-submenu">
                     <a class="sidebar-sublink<?= nav_active('reportes.php', $currentPage) ?>" href="<?= page_url('reportes') ?>">Reportes generales</a>
                 </div>
             </details>
+            <?php endif; ?>
 
+            <?php if (role_can(current_user_role(), 'admin')): ?>
             <a class="sidebar-link<?= nav_active('productos.php', $currentPage) ?>" href="<?= page_url('productos') ?>"><i class="bi bi-box-seam icon-products"></i><span>Productos</span></a>
 
             <details class="nav-section nav-admin<?= nav_section_class(['usuarios.php', 'agencias.php', 'configuracion.php'], $currentPage) ?>"<?= nav_section_open(['usuarios.php', 'agencias.php', 'configuracion.php'], $currentPage) ?>>
@@ -84,21 +86,23 @@ $layoutStarted = true;
     </aside>
 
     <div class="mobile-menu-backdrop" data-mobile-menu-close></div>
-    <nav class="mobile-slide-nav<?= current_user_role() === 'admin' ? ' mobile-slide-nav-admin' : ' mobile-slide-nav-user' ?>" id="mobileMenu" aria-label="Menu movil">
+    <nav class="mobile-slide-nav<?= role_can(current_user_role(), 'admin') ? ' mobile-slide-nav-admin' : ' mobile-slide-nav-user' ?>" id="mobileMenu" aria-label="Menu movil">
         <div class="mobile-slide-head">
             <strong>Menu</strong>
             <button type="button" data-mobile-menu-close aria-label="Cerrar menu"><i class="bi bi-list"></i></button>
         </div>
-        <?php if (current_user_role() === 'admin'): ?>
+        <?php if (role_can(current_user_role(), 'admin')): ?>
             <a class="<?= nav_active('dashboard.php', $currentPage) ?>" href="<?= page_url('dashboard') ?>"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
             <details class="mobile-nav-section"<?= nav_section_open(['conteo.php', 'toma_detalle.php'], $currentPage) ?>>
                 <summary><i class="bi bi-clipboard-check"></i><span>Conteo y Borradores</span><i class="bi bi-chevron-down"></i></summary>
                 <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= page_url('conteo') ?>"><i class="bi bi-plus-circle"></i><span>Nuevo conteo</span></a>
             </details>
+            <?php if (current_user_can('reports')): ?>
             <details class="mobile-nav-section"<?= nav_section_open(['reportes.php'], $currentPage) ?>>
                 <summary><i class="bi bi-file-earmark-spreadsheet"></i><span>Reportes</span><i class="bi bi-chevron-down"></i></summary>
                 <a class="<?= nav_active('reportes.php', $currentPage) ?>" href="<?= page_url('reportes') ?>"><i class="bi bi-graph-up"></i><span>Reportes generales</span></a>
             </details>
+            <?php endif; ?>
             <a class="<?= nav_active('productos.php', $currentPage) ?>" href="<?= page_url('productos') ?>"><i class="bi bi-box-seam"></i><span>Productos</span></a>
             <details class="mobile-nav-section"<?= nav_section_open(['usuarios.php', 'agencias.php', 'configuracion.php'], $currentPage) ?>>
                 <summary><i class="bi bi-gear"></i><span>Administracion</span><i class="bi bi-chevron-down"></i></summary>
@@ -108,7 +112,12 @@ $layoutStarted = true;
             </details>
             <a href="<?= page_url('logout') ?>" class="mobile-logout-link"><i class="bi bi-box-arrow-right"></i><span>Cerrar sesion</span></a>
         <?php else: ?>
+            <?php if (current_user_can('reports')): ?>
+            <a class="<?= nav_active('reportes.php', $currentPage) ?>" href="<?= page_url('reportes') ?>"><i class="bi bi-graph-up"></i><span>Reportes generales</span></a>
+            <?php endif; ?>
+            <?php if (current_user_can('count')): ?>
             <a class="<?= nav_active('conteo.php', $currentPage) ?>" href="<?= page_url('conteo') ?>"><i class="bi bi-clipboard-check"></i><span>Conteo inventario</span></a>
+            <?php endif; ?>
             <a href="<?= page_url('logout') ?>" class="mobile-logout-link"><i class="bi bi-box-arrow-right"></i><span>Cerrar sesion</span></a>
         <?php endif; ?>
     </nav>
@@ -128,7 +137,7 @@ $layoutStarted = true;
                         <i class="bi bi-person-circle"></i>
                         <span>
                             <strong><?= current_user_name() ?></strong>
-                            <small><?= current_user_role() === 'admin' ? 'Administrador' : 'Usuario' ?></small>
+                            <small><?= role_can(current_user_role(), 'admin') ? 'Administrador' : (current_user_can('reports') ? 'Reportes' : 'Usuario') ?></small>
                         </span>
                         <i class="bi bi-chevron-down"></i>
                     </summary>

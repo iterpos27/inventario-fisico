@@ -1,6 +1,7 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
+require_once APP_INCLUDES_PATH . '/observability.php';
 require_admin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?? null)) {
@@ -26,6 +27,7 @@ if ($tomaId <= 0) {
 }
 
 try {
+    $startedAt = microtime(true);
     $stmt = $pdo->prepare('SELECT id, numero_toma, nombre_toma FROM tomas_fisicas WHERE id = ?');
     $stmt->execute([$tomaId]);
     $toma = $stmt->fetch();
@@ -78,6 +80,15 @@ try {
         $productos[$productoKey]['total'] += $cantidad;
     }
 
+    $stmt = $pdo->prepare('SELECT archivo_excel FROM tomas_fisicas WHERE id = ? AND archivo_excel IS NOT NULL AND archivo_excel <> "" LIMIT 1');
+    $stmt->execute([$tomaId]);
+    $cachedPath = $stmt->fetchColumn();
+    if ($cachedPath && is_file(ROOT_PATH . '/' . $cachedPath)) {
+        audit_log($pdo, 'download_cached_consolidado', 'toma', $tomaId);
+        header('Location: ' . action_url('descargar_consolidado', ['toma_id' => $tomaId]));
+        exit;
+    }
+
     $dir = STORAGE_PATH . '/conteos';
     if (!is_dir($dir)) {
         mkdir($dir, 0775, true);
@@ -121,10 +132,12 @@ try {
 
     $stmt = $pdo->prepare('UPDATE tomas_fisicas SET archivo_excel = ? WHERE id = ?');
     $stmt->execute([$relativePath, $tomaId]);
+    audit_log($pdo, 'generate_consolidado', 'toma', $tomaId, ['productos' => count($productos)]);
+    monitor_duration($pdo, 'generar_consolidado', $startedAt, 1200, ['toma_id' => $tomaId, 'productos' => count($productos)]);
 
     header('Location: ' . action_url('descargar_consolidado', ['toma_id' => $tomaId]));
 } catch (Throwable $exception) {
-    error_log('Error al generar consolidado: ' . $exception->getMessage());
+    app_log($pdo, 'error', 'generar_consolidado_failed', 'Error al generar consolidado', ['toma_id' => $tomaId, 'error' => $exception->getMessage()]);
     header('Location: ' . page_url('toma_detalle', ['id' => $tomaId, 'error' => 'consolidado']));
 }
 exit;

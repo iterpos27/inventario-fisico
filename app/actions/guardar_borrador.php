@@ -3,6 +3,7 @@ require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 require_once APP_INCLUDES_PATH . '/conteo_items.php';
 require_once APP_INCLUDES_PATH . '/toma_window.php';
+require_once APP_INCLUDES_PATH . '/observability.php';
 require_once APP_PATH . '/repositories/ConteoRepository.php';
 require_login();
 
@@ -57,6 +58,7 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    app_log($pdo, 'error', 'guardar_borrador_failed', 'No se pudo guardar borrador web', ['conteo_id' => $conteoId, 'error' => $exception->getMessage()]);
     $isVersionConflict = str_contains($exception->getMessage(), 'cambio desde otro dispositivo');
     http_response_code($isVersionConflict ? 409 : 500);
     echo json_encode(['ok' => false, 'message' => $isVersionConflict ? $exception->getMessage() : 'No se pudo guardar el borrador']);

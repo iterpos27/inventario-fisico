@@ -4,6 +4,13 @@ require_once APP_INCLUDES_PATH . '/auth.php';
 require_admin();
 
 $usuarios = $pdo->query('SELECT id, nombre, usuario, rol, estado, fecha_creacion FROM usuarios ORDER BY id DESC')->fetchAll();
+$roles = [
+    'usuario' => 'Usuario',
+    'operador' => 'Operador',
+    'reportes' => 'Solo reportes',
+    'supervisor' => 'Supervisor',
+    'admin' => 'Admin',
+];
 
 $pageTitle = 'Usuarios - ' . APP_NAME;
 require_once APP_INCLUDES_PATH . '/header.php';
@@ -61,7 +68,14 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
                     <div class="mb-3"><label class="form-label">Nombre</label><input class="form-control" name="nombre" required></div>
                     <div class="mb-3"><label class="form-label">Usuario</label><input class="form-control" name="usuario" required></div>
                     <div class="mb-3"><label class="form-label">Contrasena</label><input class="form-control" type="password" name="password" required minlength="10"></div>
-                    <div><label class="form-label">Rol</label><select class="form-select" name="rol"><option value="usuario">Usuario</option><option value="admin">Admin</option></select></div>
+                    <div>
+                        <label class="form-label">Rol</label>
+                        <select class="form-select" name="rol">
+                            <?php foreach ($roles as $roleValue => $roleLabel): ?>
+                                <option value="<?= e($roleValue) ?>"><?= e($roleLabel) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-outline-primary" type="button" data-bs-dismiss="modal">Cancelar</button>
@@ -91,8 +105,9 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
                         <div class="col-6">
                             <label class="form-label">Rol</label>
                             <select class="form-select" name="rol" <?= (int) $usuario['id'] === (int) ($_SESSION['usuario_id'] ?? 0) ? 'disabled' : '' ?>>
-                                <option value="usuario" <?= $usuario['rol'] === 'usuario' ? 'selected' : '' ?>>Usuario</option>
-                                <option value="admin" <?= $usuario['rol'] === 'admin' ? 'selected' : '' ?>>Admin</option>
+                                <?php foreach ($roles as $roleValue => $roleLabel): ?>
+                                    <option value="<?= e($roleValue) ?>" <?= $usuario['rol'] === $roleValue ? 'selected' : '' ?>><?= e($roleLabel) ?></option>
+                                <?php endforeach; ?>
                             </select>
                             <?php if ((int) $usuario['id'] === (int) ($_SESSION['usuario_id'] ?? 0)): ?><input type="hidden" name="rol" value="admin"><?php endif; ?>
                         </div>

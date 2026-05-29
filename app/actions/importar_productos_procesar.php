@@ -1,7 +1,7 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
-require_once APP_INCLUDES_PATH . '/product_codes.php';
+require_once APP_INCLUDES_PATH . '/observability.php';
 require_admin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?? null)) {
@@ -15,38 +15,10 @@ if (!file_exists($autoload)) {
     exit;
 }
 require_once $autoload;
+require_once APP_INCLUDES_PATH . '/import_jobs.php';
 
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-
-@set_time_limit(300);
+@set_time_limit(120);
 @ini_set('memory_limit', '512M');
-
-function flush_product_import_batch(PDO $pdo, array &$batch): int
-{
-    if (!$batch) {
-        return 0;
-    }
-
-    $values = [];
-    $params = [];
-    foreach ($batch as $product) {
-        $values[] = '(?, ?, 1)';
-        $params[] = $product['codigo'];
-        $params[] = $product['descripcion'];
-    }
-
-    $sql = 'INSERT INTO productos (codigo, descripcion, estado) VALUES '
-        . implode(', ', $values)
-        . ' ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion), estado = 1';
-
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $processed = count($batch);
-    $batch = [];
-
-    return $processed;
-}
 
 $missingPhpExtensions = [];
 foreach (['zip', 'gd'] as $extension) {
@@ -65,8 +37,8 @@ if (empty($_FILES['archivo']['tmp_name']) || $_FILES['archivo']['error'] !== UPL
     header('Location: ' . page_url('productos', ['error' => 'Seleccione un archivo valido']));
     exit;
 }
-if ((int) ($_FILES['archivo']['size'] ?? 0) > 10 * 1024 * 1024) {
-    header('Location: ' . page_url('productos', ['error' => 'El archivo no puede superar 10 MB']));
+if ((int) ($_FILES['archivo']['size'] ?? 0) > 30 * 1024 * 1024) {
+    header('Location: ' . page_url('productos', ['error' => 'El archivo no puede superar 30 MB']));
     exit;
 }
 
@@ -87,68 +59,18 @@ if (!move_uploaded_file($_FILES['archivo']['tmp_name'], $savedFile)) {
 }
 
 try {
-    $reader = IOFactory::createReaderForFile($savedFile);
-    $reader->setReadDataOnly(true);
-    $spreadsheet = $reader->load($savedFile);
-    $sheet = $spreadsheet->getActiveSheet();
-    $highestRow = $sheet->getHighestDataRow();
-    if ($highestRow < 2) {
-        throw new RuntimeException('Archivo sin datos');
-    }
-
-    $highestColumnIndex = Coordinate::columnIndexFromString($sheet->getHighestDataColumn());
-    $headerRow = [];
-    for ($columnIndex = 1; $columnIndex <= $highestColumnIndex; $columnIndex++) {
-        $headerRow[$columnIndex] = $sheet->getCell(Coordinate::stringFromColumnIndex($columnIndex) . '1')->getValue();
-    }
-
-    $headers = [];
-    foreach ($headerRow as $columnIndex => $header) {
-        $header = strtolower(trim((string) $header));
-        $headers[$columnIndex] = str_replace(["\xEF\xBB\xBF", ' ', '_', '-'], ['', '', '', ''], $header);
-    }
-
-    $codigoCol = array_search('codigo', $headers, true);
-    $descripcionCol = array_search('descripcion', $headers, true);
-    if ($codigoCol === false || $descripcionCol === false) {
-        throw new RuntimeException('Columnas requeridas no encontradas');
-    }
-
-    $procesados = 0;
-    $batch = [];
-    $batchSize = 500;
-    $pdo->beginTransaction();
-    for ($rowIndex = 2; $rowIndex <= $highestRow; $rowIndex++) {
-        $codigo = normalizar_codigo_producto($sheet->getCell(Coordinate::stringFromColumnIndex((int) $codigoCol) . $rowIndex)->getValue());
-        $descripcion = trim((string) $sheet->getCell(Coordinate::stringFromColumnIndex((int) $descripcionCol) . $rowIndex)->getValue());
-        if ($codigo === '' || $descripcion === '') {
-            continue;
-        }
-
-        $batch[] = [
-            'codigo' => $codigo,
-            'descripcion' => $descripcion,
-        ];
-
-        if (count($batch) >= $batchSize) {
-            $procesados += flush_product_import_batch($pdo, $batch);
-        }
-    }
-    $procesados += flush_product_import_batch($pdo, $batch);
-    $pdo->commit();
-
-    $spreadsheet->disconnectWorksheets();
-    unset($spreadsheet);
-    @unlink($savedFile);
-    header('Location: ' . page_url('productos', ['msg' => "Importacion completada: {$procesados} productos procesados"]));
+    $jobId = product_import_create_job(
+        $pdo,
+        $savedFile,
+        (string) ($_FILES['archivo']['name'] ?? basename($savedFile)),
+        $extension,
+        (int) $_SESSION['usuario_id']
+    );
+    audit_log($pdo, 'import_created', 'productos', $jobId, ['archivo' => $_FILES['archivo']['name'] ?? '']);
+    header('Location: ' . page_url('productos', ['import_job' => $jobId]));
 } catch (Throwable $exception) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-    error_log('Error al importar productos: ' . $exception->getMessage());
     @unlink($savedFile);
-    header('Location: ' . page_url('productos', ['error' => 'No se pudo importar el archivo. Revise el formato e intente nuevamente.']));
+    app_log($pdo, 'error', 'product_import_create_failed', 'No se pudo crear importacion', ['error' => $exception->getMessage()]);
+    header('Location: ' . page_url('productos', ['error' => 'No se pudo preparar la importacion. Revise el formato e intente nuevamente.']));
 }
 exit;
-
-

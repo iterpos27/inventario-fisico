@@ -79,7 +79,7 @@ function ensure_schema(PDO $pdo): void
             nombre VARCHAR(120) NOT NULL,
             usuario VARCHAR(60) NOT NULL UNIQUE,
             password VARCHAR(255) NOT NULL,
-            rol ENUM('admin', 'usuario') NOT NULL DEFAULT 'usuario',
+            rol ENUM('admin', 'supervisor', 'operador', 'reportes', 'usuario') NOT NULL DEFAULT 'usuario',
             estado TINYINT(1) NOT NULL DEFAULT 1,
             fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
@@ -214,6 +214,77 @@ function ensure_schema(PDO $pdo): void
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
 
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS app_logs (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            level ENUM('debug', 'info', 'warning', 'error') NOT NULL DEFAULT 'info',
+            event VARCHAR(120) NOT NULL,
+            message VARCHAR(1000) NOT NULL,
+            context TEXT NULL,
+            ip VARCHAR(45) NULL,
+            usuario_id INT UNSIGNED NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_app_logs_event_created (event, created_at),
+            INDEX idx_app_logs_level_created (level, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS audit_logs (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            usuario_id INT UNSIGNED NULL,
+            action VARCHAR(80) NOT NULL,
+            entity VARCHAR(80) NOT NULL,
+            entity_id INT UNSIGNED NULL,
+            details TEXT NULL,
+            ip VARCHAR(45) NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_audit_logs_entity (entity, entity_id),
+            INDEX idx_audit_logs_created (created_at),
+            INDEX idx_audit_logs_usuario (usuario_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS toma_resumen (
+            toma_id INT UNSIGNED PRIMARY KEY,
+            usuarios_asignados INT UNSIGNED NOT NULL DEFAULT 0,
+            usuarios_finalizados INT UNSIGNED NOT NULL DEFAULT 0,
+            conteos_creados INT UNSIGNED NOT NULL DEFAULT 0,
+            conteos_con_detalle INT UNSIGNED NOT NULL DEFAULT 0,
+            unidades_contadas DECIMAL(14,2) NOT NULL DEFAULT 0,
+            updated_at DATETIME NULL,
+            CONSTRAINT fk_toma_resumen_toma FOREIGN KEY (toma_id) REFERENCES tomas_fisicas(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS import_jobs (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            usuario_id INT UNSIGNED NOT NULL,
+            archivo VARCHAR(255) NOT NULL,
+            nombre_original VARCHAR(255) NOT NULL,
+            extension VARCHAR(12) NOT NULL,
+            codigo_col INT UNSIGNED NOT NULL,
+            descripcion_col INT UNSIGNED NOT NULL,
+            current_row INT UNSIGNED NOT NULL DEFAULT 2,
+            total_rows INT UNSIGNED NOT NULL DEFAULT 0,
+            procesados INT UNSIGNED NOT NULL DEFAULT 0,
+            insertados INT UNSIGNED NOT NULL DEFAULT 0,
+            actualizados INT UNSIGNED NOT NULL DEFAULT 0,
+            omitidos INT UNSIGNED NOT NULL DEFAULT 0,
+            errores INT UNSIGNED NOT NULL DEFAULT 0,
+            estado ENUM('pendiente', 'procesando', 'finalizado', 'fallido') NOT NULL DEFAULT 'pendiente',
+            error_message VARCHAR(1000) NULL,
+            creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            actualizado_en DATETIME NULL,
+            finalizado_en DATETIME NULL,
+            CONSTRAINT fk_import_jobs_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+            INDEX idx_import_jobs_estado (estado),
+            INDEX idx_import_jobs_usuario (usuario_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
     ensure_column_exists($pdo, 'conteos', 'toma_id', 'toma_id INT UNSIGNED NULL AFTER id');
     ensure_column_exists($pdo, 'conteos', 'version', 'version INT UNSIGNED NOT NULL DEFAULT 0 AFTER archivo_excel');
     ensure_column_exists($pdo, 'conteos', 'updated_at', 'updated_at DATETIME NULL AFTER version');
@@ -222,6 +293,7 @@ function ensure_schema(PDO $pdo): void
     ensure_column_exists($pdo, 'tomas_fisicas', 'hora_inicio', 'hora_inicio TIME NULL AFTER fecha_cierre');
     ensure_column_exists($pdo, 'tomas_fisicas', 'hora_fin', 'hora_fin TIME NULL AFTER hora_inicio');
 
+    ensure_column_type($pdo, 'usuarios', 'rol', "enum('admin','supervisor','operador','reportes','usuario')", "ALTER TABLE usuarios MODIFY rol ENUM('admin', 'supervisor', 'operador', 'reportes', 'usuario') NOT NULL DEFAULT 'usuario'");
     ensure_column_type($pdo, 'tomas_fisicas', 'agencia', 'varchar(120)', 'ALTER TABLE tomas_fisicas MODIFY agencia VARCHAR(120) NULL');
     ensure_column_type($pdo, 'productos', 'descripcion', 'varchar(1000)', 'ALTER TABLE productos MODIFY descripcion VARCHAR(1000) NOT NULL');
     ensure_column_type($pdo, 'conteo_detalle', 'descripcion', 'varchar(1000)', 'ALTER TABLE conteo_detalle MODIFY descripcion VARCHAR(1000) NOT NULL');

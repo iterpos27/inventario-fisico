@@ -4,6 +4,8 @@ require_once APP_INCLUDES_PATH . '/auth.php';
 require_once APP_INCLUDES_PATH . '/conteo_items.php';
 require_once APP_INCLUDES_PATH . '/excel_exports.php';
 require_once APP_INCLUDES_PATH . '/toma_window.php';
+require_once APP_INCLUDES_PATH . '/observability.php';
+require_once APP_INCLUDES_PATH . '/toma_summary.php';
 require_once APP_PATH . '/repositories/ConteoRepository.php';
 require_login();
 
@@ -60,9 +62,12 @@ try {
 
     $conteos->finalizarConteo($conteoId, $relativePath);
     $conteos->finalizarAsignacion($tomaId, (int) $_SESSION['usuario_id']);
+    $pdo->prepare('UPDATE tomas_fisicas SET archivo_excel = NULL WHERE id = ?')->execute([$tomaId]);
     $conteos->cerrarTomaSiCompleta($tomaId);
+    refresh_toma_summary($pdo, $tomaId);
 
     $pdo->commit();
+    audit_log($pdo, 'finalize', 'conteo', $conteoId, ['toma_id' => $tomaId]);
     echo json_encode([
         'ok' => true,
         'conteo_id' => $conteoId,
@@ -74,6 +79,7 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    app_log($pdo, 'error', 'finalizar_conteo_failed', 'No se pudo finalizar conteo web', ['conteo_id' => $conteoId, 'error' => $exception->getMessage()]);
     $isVersionConflict = str_contains($exception->getMessage(), 'cambio desde otro dispositivo');
     http_response_code($isVersionConflict ? 409 : 500);
     echo json_encode(['ok' => false, 'message' => $isVersionConflict ? $exception->getMessage() : 'No se pudo finalizar el conteo']);

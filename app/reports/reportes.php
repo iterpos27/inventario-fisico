@@ -1,12 +1,10 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
-require_login();
-
-if (current_user_role() !== 'admin') {
-    header('Location: ' . page_url('conteo'));
-    exit;
-}
+require_once APP_INCLUDES_PATH . '/observability.php';
+require_once APP_INCLUDES_PATH . '/toma_summary.php';
+require_permission('reports');
+$reportStartedAt = microtime(true);
 
 $fechaDesde = $_GET['fecha_desde'] ?? date('Y-m-01');
 $fechaHasta = $_GET['fecha_hasta'] ?? date('Y-m-d');
@@ -22,22 +20,37 @@ if ($fechaDesde > $fechaHasta) {
 }
 
 $tomas = [];
-if (current_user_role() === 'admin') {
+if (current_user_can('reports')) {
     $stmt = $pdo->query(
         "SELECT t.id, t.nombre_toma, t.estado, t.fecha_creacion, t.fecha_finalizacion, t.archivo_excel,
-                (SELECT COUNT(*) FROM toma_usuarios tu WHERE tu.toma_id = t.id) AS asignados,
-                (SELECT COUNT(*) FROM toma_usuarios tu WHERE tu.toma_id = t.id AND tu.estado = 'finalizado') AS finalizados,
-                (SELECT COUNT(*) FROM conteos c WHERE c.toma_id = t.id) AS conteos_creados,
-                (
-                    SELECT COUNT(DISTINCT c.id)
-                    FROM conteos c
-                    INNER JOIN conteo_detalle d ON d.conteo_id = c.id
-                    WHERE c.toma_id = t.id
-                ) AS conteos_con_detalle
+                r.updated_at AS resumen_actualizado,
+                COALESCE(r.usuarios_asignados, 0) AS asignados,
+                COALESCE(r.usuarios_finalizados, 0) AS finalizados,
+                COALESCE(r.conteos_creados, 0) AS conteos_creados,
+                COALESCE(r.conteos_con_detalle, 0) AS conteos_con_detalle
          FROM tomas_fisicas t
+         LEFT JOIN toma_resumen r ON r.toma_id = t.id
          ORDER BY t.id DESC"
     );
     $tomas = $stmt->fetchAll();
+    $missingSummaries = array_filter($tomas, static fn($toma) => $toma['resumen_actualizado'] === null);
+    if ($missingSummaries) {
+        foreach ($missingSummaries as $toma) {
+            refresh_toma_summary($pdo, (int) $toma['id']);
+        }
+        $stmt = $pdo->query(
+            "SELECT t.id, t.nombre_toma, t.estado, t.fecha_creacion, t.fecha_finalizacion, t.archivo_excel,
+                    r.updated_at AS resumen_actualizado,
+                    COALESCE(r.usuarios_asignados, 0) AS asignados,
+                    COALESCE(r.usuarios_finalizados, 0) AS finalizados,
+                    COALESCE(r.conteos_creados, 0) AS conteos_creados,
+                    COALESCE(r.conteos_con_detalle, 0) AS conteos_con_detalle
+             FROM tomas_fisicas t
+             LEFT JOIN toma_resumen r ON r.toma_id = t.id
+             ORDER BY t.id DESC"
+        );
+        $tomas = $stmt->fetchAll();
+    }
 }
 
 $rangeSql = "SELECT DATE(fecha_inicio) AS dia,
@@ -47,7 +60,7 @@ $rangeSql = "SELECT DATE(fecha_inicio) AS dia,
              FROM conteos
              WHERE fecha_inicio >= ? AND fecha_inicio < DATE_ADD(?, INTERVAL 1 DAY)";
 $rangeParams = [$fechaDesde . ' 00:00:00', $fechaHasta . ' 00:00:00'];
-if (current_user_role() !== 'admin') {
+if (!role_can(current_user_role(), 'admin')) {
     $rangeSql .= ' AND usuario_id = ?';
     $rangeParams[] = (int) $_SESSION['usuario_id'];
 }
@@ -55,6 +68,7 @@ $rangeSql .= ' GROUP BY DATE(fecha_inicio) ORDER BY dia DESC';
 $stmt = $pdo->prepare($rangeSql);
 $stmt->execute($rangeParams);
 $diasRango = $stmt->fetchAll();
+monitor_duration($pdo, 'reportes_generales', $reportStartedAt, 1000, ['desde' => $fechaDesde, 'hasta' => $fechaHasta]);
 
 $pageTitle = 'Reportes - ' . APP_NAME;
 require_once APP_INCLUDES_PATH . '/header.php';
@@ -103,7 +117,7 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
         </div>
     </section>
 
-    <?php if (current_user_role() === 'admin'): ?>
+    <?php if (role_can(current_user_role(), 'admin')): ?>
     <section class="content-panel mb-4">
         <div class="section-title"><h2>Exportaciones por toma fisica</h2></div>
         <div class="table-responsive">

@@ -53,7 +53,10 @@ $_SESSION['last_activity'] = time();
 $stmt = $pdo->prepare('DELETE FROM login_attempts WHERE usuario = ? AND ip = ?');
 $stmt->execute([$usuario, $ip]);
 
-header('Location: ' . page_url($user['rol'] === 'admin' ? 'dashboard' : 'conteo'));
+$redirectPage = role_can((string) $user['rol'], 'admin')
+    ? 'dashboard'
+    : (role_can((string) $user['rol'], 'reports') ? 'reportes' : 'conteo');
+header('Location: ' . page_url($redirectPage));
 exit;
 
 

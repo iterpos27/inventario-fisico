@@ -2,6 +2,8 @@
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 require_once APP_INCLUDES_PATH . '/excel_exports.php';
+require_once APP_INCLUDES_PATH . '/observability.php';
+require_once APP_INCLUDES_PATH . '/toma_summary.php';
 require_once APP_PATH . '/repositories/ConteoRepository.php';
 require_admin();
 
@@ -41,21 +43,26 @@ try {
             $conteos->finalizarConteo((int) $conteo['id'], $archivoExcel);
             $conteos->finalizarAsignacion($tomaId, (int) $conteo['usuario_id']);
         }
+        refresh_toma_summary($pdo, $tomaId);
 
         $pdo->commit();
+        audit_log($pdo, 'close', 'toma', $tomaId);
     } elseif ($accion === 'reabrir') {
         $pdo->beginTransaction();
         if (!$conteos->lockToma($tomaId)) {
             throw new RuntimeException('Toma no encontrada');
         }
-        $stmt = $pdo->prepare("UPDATE tomas_fisicas SET estado = 'abierta', fecha_finalizacion = NULL WHERE id = ? AND estado = 'finalizada'");
+        $stmt = $pdo->prepare("UPDATE tomas_fisicas SET estado = 'abierta', fecha_finalizacion = NULL, archivo_excel = NULL WHERE id = ? AND estado = 'finalizada'");
         $stmt->execute([$tomaId]);
+        refresh_toma_summary($pdo, $tomaId);
         $pdo->commit();
+        audit_log($pdo, 'reopen', 'toma', $tomaId);
     }
 } catch (Throwable $exception) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    app_log($pdo, 'error', 'change_toma_status_failed', 'No se pudo cambiar estado de toma', ['toma_id' => $tomaId, 'accion' => $accion, 'error' => $exception->getMessage()]);
     header('Location: ' . page_url('toma_detalle', ['id' => $tomaId, 'error' => 'estado']));
     exit;
 }

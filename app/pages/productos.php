@@ -73,6 +73,7 @@ $errorMessage = trim((string) ($_GET['error'] ?? ''));
 if ($excelReady && str_contains($errorMessage, 'composer require phpoffice/phpspreadsheet')) {
     $errorMessage = '';
 }
+$importJobId = max(0, (int) ($_GET['import_job'] ?? 0));
 
 $pageTitle = 'Productos - ' . APP_NAME;
 require_once APP_INCLUDES_PATH . '/header.php';
@@ -104,6 +105,19 @@ require_once APP_INCLUDES_PATH . '/navbar.php';
                 Falta instalar PhpSpreadsheet. Ejecute <strong>composer install</strong> en la carpeta del proyecto.
             <?php endif; ?>
         </div>
+    <?php endif; ?>
+
+    <?php if ($importJobId > 0): ?>
+        <section class="content-panel mb-3" id="importJobPanel" data-job-id="<?= $importJobId ?>" data-csrf="<?= e(csrf_token()) ?>">
+            <div class="section-title">
+                <h2>Importacion en segundo plano</h2>
+                <span class="badge text-bg-primary" id="importJobStatus">Preparando</span>
+            </div>
+            <div class="progress mb-2" role="progressbar" aria-label="Progreso de importacion">
+                <div class="progress-bar" id="importJobProgress" style="width: 0%">0%</div>
+            </div>
+            <p class="text-secondary mb-0" id="importJobText">Procesando archivo por lotes...</p>
+        </section>
     <?php endif; ?>
 
     <section class="count-tool mb-3">

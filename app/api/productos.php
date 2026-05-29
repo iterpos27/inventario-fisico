@@ -9,7 +9,11 @@ if (mb_strlen($q) < 3) {
     api_json(['ok' => true, 'productos' => []]);
 }
 
+$startedAt = microtime(true);
+$productos = (new ProductRepository($pdo))->searchActive($q, 30);
+monitor_duration($pdo, 'product_search_api', $startedAt, 500, ['q' => $q, 'results' => count($productos)]);
+
 api_json([
     'ok' => true,
-    'productos' => (new ProductRepository($pdo))->searchActive($q, 30),
+    'productos' => $productos,
 ]);

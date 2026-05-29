@@ -59,7 +59,7 @@ class ApiClient {
     required String baseUrl,
   }) async {
     await setBaseUrl(baseUrl);
-    final data = await _post('/api/login', {
+    final data = await _post('/api/v1/login', {
       'usuario': usuario,
       'password': password,
       'device': 'Flutter Android',
@@ -72,7 +72,7 @@ class ApiClient {
   Future<void> logout() async {
     if (hasToken) {
       try {
-        await _post('/api/logout', {});
+        await _post('/api/v1/logout', {});
       } catch (_) {
         // La salida local debe funcionar aunque el servidor no responda.
       }
@@ -83,19 +83,19 @@ class ApiClient {
   }
 
   Future<List<Toma>> fetchTomas() async {
-    final data = await _get('/api/tomas');
+    final data = await _get('/api/v1/tomas');
     return (data['tomas'] as List? ?? [])
         .map((item) => Toma.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList();
   }
 
   Future<int> iniciarConteo(int tomaId) async {
-    final data = await _post('/api/iniciar_conteo', {'toma_id': tomaId});
+    final data = await _post('/api/v1/iniciar_conteo', {'toma_id': tomaId});
     return int.parse('${data['conteo_id']}');
   }
 
   Future<ConteoDetalleSnapshot> fetchDetalle(int conteoId) async {
-    final data = await _get('/api/detalle_conteo?conteo_id=$conteoId');
+    final data = await _get('/api/v1/detalle_conteo?conteo_id=$conteoId');
     final items = (data['items'] as List? ?? [])
         .map((item) => ConteoItem.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList();
@@ -107,14 +107,14 @@ class ApiClient {
   }
 
   Future<List<Producto>> buscarProductos(String q) async {
-    final data = await _get('/api/productos?q=${Uri.encodeQueryComponent(q)}');
+    final data = await _get('/api/v1/productos?q=${Uri.encodeQueryComponent(q)}');
     return (data['productos'] as List? ?? [])
         .map((item) => Producto.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList();
   }
 
   Future<int> guardarBorrador(int conteoId, List<ConteoItem> items, int conteoVersion) async {
-    final data = await _post('/api/guardar_borrador', {
+    final data = await _post('/api/v1/guardar_borrador', {
       'conteo_id': conteoId,
       'conteo_version': conteoVersion,
       'items': items.map((item) => item.toJson()).toList(),
@@ -123,7 +123,7 @@ class ApiClient {
   }
 
   Future<String?> finalizarConteo(int conteoId, List<ConteoItem> items, int conteoVersion) async {
-    final data = await _post('/api/finalizar_conteo', {
+    final data = await _post('/api/v1/finalizar_conteo', {
       'conteo_id': conteoId,
       'conteo_version': conteoVersion,
       'items': items.map((item) => item.toJson()).toList(),

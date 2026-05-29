@@ -36,6 +36,7 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    app_log($pdo, 'error', 'guardar_borrador_api_failed', 'No se pudo guardar borrador API', ['conteo_id' => $conteoId, 'error' => $exception->getMessage()]);
     $isVersionConflict = str_contains($exception->getMessage(), 'cambio desde otro dispositivo');
     api_json([
         'ok' => false,

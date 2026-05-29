@@ -1,6 +1,8 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
+require_once APP_INCLUDES_PATH . '/observability.php';
+require_once APP_INCLUDES_PATH . '/toma_summary.php';
 require_admin();
 
 header('Content-Type: application/json; charset=utf-8');
@@ -97,7 +99,7 @@ try {
     $tomaId = (int) $pdo->lastInsertId();
 
     $placeholders = implode(',', array_fill(0, count($usuarioIds), '?'));
-    $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE rol = 'usuario' AND estado = 1 AND id IN ({$placeholders})");
+    $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE rol IN ('usuario', 'operador') AND estado = 1 AND id IN ({$placeholders})");
     $stmt->execute($usuarioIds);
     $usuarios = $stmt->fetchAll();
     if (!$usuarios) {
@@ -108,8 +110,10 @@ try {
     foreach ($usuarios as $usuario) {
         $stmtAsignar->execute([$tomaId, (int) $usuario['id']]);
     }
+    refresh_toma_summary($pdo, $tomaId);
 
     $pdo->commit();
+    audit_log($pdo, 'create', 'toma', $tomaId, ['usuarios_asignados' => count($usuarios)]);
 
     echo json_encode([
         'ok' => true,
@@ -124,6 +128,7 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    app_log($pdo, 'error', 'crear_toma_failed', 'No se pudo crear toma fisica', ['error' => $exception->getMessage()]);
     http_response_code(500);
     echo json_encode(['ok' => false, 'message' => 'No se pudo crear la toma fisica']);
 }

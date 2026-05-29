@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 require_once APP_INCLUDES_PATH . '/toma_window.php';
+require_once APP_INCLUDES_PATH . '/toma_summary.php';
 require_once APP_PATH . '/repositories/ConteoRepository.php';
 
 $user = api_require_user($pdo);
@@ -36,9 +37,12 @@ try {
     $archivoExcel = generar_excel_conteo($pdo, $conteoId);
     $conteos->finalizarConteo($conteoId, $archivoExcel);
     $conteos->finalizarAsignacion($tomaId, (int) $user['id']);
+    $pdo->prepare('UPDATE tomas_fisicas SET archivo_excel = NULL WHERE id = ?')->execute([$tomaId]);
     $conteos->cerrarTomaSiCompleta($tomaId);
+    refresh_toma_summary($pdo, $tomaId);
 
     $pdo->commit();
+    audit_log($pdo, 'finalize_api', 'conteo', $conteoId, ['toma_id' => $tomaId, 'usuario_id' => (int) $user['id']]);
     api_json([
         'ok' => true,
         'conteo_id' => $conteoId,
