@@ -23,28 +23,3 @@
     line-height: 1.1;
   }
 }
-
-.quantity-modal .modal-body {
-  display: grid;
-  gap: 8px;
-}
-
-.quantity-product-name {
-  margin: 0;
-  color: #152c45;
-  font-weight: 800;
-  line-height: 1.35;
-}
-
-.quantity-modal-input {
-  min-height: 52px;
-  font-size: 1.35rem;
-  font-weight: 800;
-  text-align: center;
-}
-
-@media (max-width: 768px) {
-  .quantity-modal .modal-dialog {
-    margin-inline: 14px;
-  }
-}
