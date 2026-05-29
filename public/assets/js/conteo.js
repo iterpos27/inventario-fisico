@@ -157,7 +157,7 @@ function focusQuantity(productId) {
   setTimeout(focusInput, 140);
   setTimeout(focusInput, 280);
   state.quantityFocusTimer = setInterval(() => {
-    if (Date.now() - startedAt > 2600) {
+    if (Date.now() - startedAt > 5000) {
       clearInterval(state.quantityFocusTimer);
       state.quantityFocusTimer = null;
       return;
