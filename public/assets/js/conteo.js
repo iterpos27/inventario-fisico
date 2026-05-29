@@ -12,6 +12,7 @@ const state = {
   scannerStream: null,
   scannerTimer: null,
   scannerActive: false,
+  quantityEditId: null,
 };
 
 for (const item of window.CONTEO_INICIAL || []) {
@@ -126,7 +127,20 @@ async function buscarProductos(q) {
     button.type = 'button';
     button.className = 'search-result';
     button.innerHTML = `<span>${escapeHtml(product.codigo)}</span><strong>${escapeHtml(product.descripcion)}</strong>`;
-    button.addEventListener('click', () => addProductLine(product));
+    let handledByPointer = false;
+    button.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      handledByPointer = true;
+      addProductLine(product);
+    });
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (handledByPointer) {
+        handledByPointer = false;
+        return;
+      }
+      addProductLine(product);
+    });
     results.appendChild(button);
   }
 
@@ -151,6 +165,54 @@ function focusQuantity(productId) {
   setTimeout(focusInput, 80);
 }
 
+function openQuantityModal(productId) {
+  const item = state.items.get(String(productId));
+  if (!item) return focusQuantity(productId);
+
+  state.quantityEditId = String(productId);
+  const code = $('modalCantidadCodigo');
+  const description = $('modalCantidadDescripcion');
+  const input = $('modalCantidadInput');
+  if (code) code.textContent = item.codigo;
+  if (description) description.textContent = item.descripcion;
+  if (input) input.value = item.cantidad || '';
+
+  const modalElement = $('modalCantidadProducto');
+  if (!modalElement || !window.bootstrap || !(input instanceof HTMLInputElement)) {
+    return focusQuantity(productId);
+  }
+
+  const modal = window.bootstrap.Modal.getOrCreateInstance(modalElement, {
+    backdrop: 'static',
+    keyboard: false,
+  });
+  modal.show();
+}
+
+function focusQuantityModalInput() {
+  const input = $('modalCantidadInput');
+  if (!(input instanceof HTMLInputElement)) return;
+  input.focus();
+  input.select();
+}
+
+function applyQuantityFromModal() {
+  const input = $('modalCantidadInput');
+  const id = state.quantityEditId;
+  if (!(input instanceof HTMLInputElement) || !id || !state.items.has(id)) return;
+  const rawValue = input.value.trim();
+  state.items.get(id).cantidad = rawValue === '' ? '0' : rawValue;
+  renderList();
+  setSaveStatus('Cambios pendientes por guardar.');
+
+  const modalElement = $('modalCantidadProducto');
+  if (modalElement && window.bootstrap) {
+    window.bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+  }
+  state.quantityEditId = null;
+  $('buscarProducto')?.focus();
+}
+
 function addProductLine(product) {
   const id = String(product.id);
   if (!state.items.has(id)) {
@@ -171,7 +233,7 @@ function addProductLine(product) {
   $('resultadosBusqueda').classList.add('d-none');
   $('buscarProducto').value = '';
   toggleSearchClear();
-  focusQuantity(product.id);
+  openQuantityModal(product.id);
 }
 
 async function guardarBorrador(auto = false) {
@@ -379,6 +441,17 @@ $('listaProductos')?.addEventListener('keydown', (event) => {
   if (event.key !== 'Enter' || !event.target.dataset.edit) return;
   event.preventDefault();
   $('buscarProducto')?.focus();
+});
+
+$('modalCantidadProducto')?.addEventListener('shown.bs.modal', () => {
+  focusQuantityModalInput();
+  requestAnimationFrame(focusQuantityModalInput);
+  setTimeout(focusQuantityModalInput, 120);
+});
+
+$('formCantidadProducto')?.addEventListener('submit', (event) => {
+  event.preventDefault();
+  applyQuantityFromModal();
 });
 $('listaProductos')?.addEventListener('click', (event) => {
   const button = event.target.closest('[data-delete]');

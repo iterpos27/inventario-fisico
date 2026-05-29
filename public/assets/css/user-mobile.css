@@ -5,10 +5,46 @@
   }
 
   .app-role-usuario .count-item {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: 34px minmax(0, 1fr) 64px;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .app-role-usuario .count-item-delete {
+    width: 32px;
+    height: 32px;
   }
 
   .app-role-usuario .count-item-actions input {
-    min-height: 46px;
+    width: 64px;
+    min-height: 34px;
+    padding: 4px 6px;
+    font-size: 0.92rem;
+    line-height: 1.1;
+  }
+}
+
+.quantity-modal .modal-body {
+  display: grid;
+  gap: 8px;
+}
+
+.quantity-product-name {
+  margin: 0;
+  color: #152c45;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.quantity-modal-input {
+  min-height: 52px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .quantity-modal .modal-dialog {
+    margin-inline: 14px;
   }
 }

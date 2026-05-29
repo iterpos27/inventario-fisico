@@ -299,6 +299,27 @@ if (current_user_role() !== 'admin') {
     </div>
 </div>
 
+<div class="modal fade" id="modalCantidadProducto" tabindex="-1" aria-labelledby="modalCantidadProductoTitulo" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content app-confirm-modal quantity-modal">
+            <form id="formCantidadProducto">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="modalCantidadProductoTitulo">Cantidad contada</h2>
+                </div>
+                <div class="modal-body">
+                    <span class="product-code mb-2" id="modalCantidadCodigo"></span>
+                    <p class="quantity-product-name" id="modalCantidadDescripcion"></p>
+                    <label class="form-label" for="modalCantidadInput">Cantidad</label>
+                    <input class="form-control quantity-modal-input" id="modalCantidadInput" type="number" step="0.01" min="0" inputmode="decimal" autocomplete="off" required>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary w-100" type="submit"><i class="bi bi-check2-circle"></i> Aplicar cantidad</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="modalBorradorGuardado" tabindex="-1" aria-labelledby="modalBorradorGuardadoTitulo" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content app-confirm-modal save-confirm-modal">
