@@ -12,6 +12,7 @@ const state = {
   scannerStream: null,
   scannerTimer: null,
   scannerActive: false,
+  quantityFocusTimer: null,
 };
 
 for (const item of window.CONTEO_INICIAL || []) {
@@ -137,6 +138,8 @@ async function buscarProductos(q) {
 }
 
 function focusQuantity(productId) {
+  clearInterval(state.quantityFocusTimer);
+  const startedAt = Date.now();
   const focusInput = () => {
     const input = document.querySelector(`[data-edit="${productId}"]`);
     if (!(input instanceof HTMLInputElement)) return;
@@ -153,6 +156,14 @@ function focusQuantity(productId) {
   setTimeout(focusInput, 40);
   setTimeout(focusInput, 140);
   setTimeout(focusInput, 280);
+  state.quantityFocusTimer = setInterval(() => {
+    if (Date.now() - startedAt > 2600) {
+      clearInterval(state.quantityFocusTimer);
+      state.quantityFocusTimer = null;
+      return;
+    }
+    focusInput();
+  }, 260);
 }
 
 function addProductLine(product) {
@@ -377,6 +388,8 @@ $('listaProductos')?.addEventListener('input', (event) => {
   const id = event.target.dataset.edit;
   if (!id || !state.items.has(id)) return;
   state.items.get(id).cantidad = event.target.value;
+  clearInterval(state.quantityFocusTimer);
+  state.quantityFocusTimer = null;
   setSaveStatus('Cambios pendientes por guardar.');
 });
 $('listaProductos')?.addEventListener('keydown', (event) => {

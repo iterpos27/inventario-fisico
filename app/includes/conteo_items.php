@@ -44,22 +44,34 @@ function reemplazar_detalle_conteo(PDO $pdo, int $conteoId, array $items): int
         return 0;
     }
 
+    $productosPorId = [];
+    foreach ($productos as $producto) {
+        $productosPorId[(int) $producto['id']] = $producto;
+    }
+
     $values = [];
     $params = [];
-    foreach ($productos as $producto) {
-        $productoId = (int) $producto['id'];
+    foreach ($cantidades as $productoId => $cantidad) {
+        if (!isset($productosPorId[$productoId])) {
+            continue;
+        }
+        $producto = $productosPorId[$productoId];
         $values[] = '(?, ?, ?, ?, ?)';
         $params[] = $conteoId;
         $params[] = $productoId;
         $params[] = $producto['codigo'];
         $params[] = $producto['descripcion'];
-        $params[] = $cantidades[$productoId];
+        $params[] = $cantidad;
+    }
+
+    if (!$values) {
+        return 0;
     }
 
     $sql = 'INSERT INTO conteo_detalle (conteo_id, producto_id, codigo, descripcion, cantidad) VALUES ' . implode(', ', $values);
     $pdo->prepare($sql)->execute($params);
 
-    return count($productos);
+    return count($values);
 }
 
 
