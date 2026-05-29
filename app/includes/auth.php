@@ -4,15 +4,40 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/permissions.php';
 
-if (session_status() === PHP_SESSION_NONE) {
+function session_cookie_lifetime(): int
+{
+    return max(3600, (int) env_value('APP_SESSION_LIFETIME', '604800'));
+}
+
+function session_cookie_options(?int $lifetime = null): array
+{
     $secureCookie = env_value('APP_FORCE_HTTPS', '0') === '1' || (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
-    session_set_cookie_params([
-        'lifetime' => 0,
+
+    return [
+        'lifetime' => $lifetime ?? session_cookie_lifetime(),
         'path' => BASE_URL !== '' ? BASE_URL : '/',
         'secure' => $secureCookie,
         'httponly' => true,
         'samesite' => 'Lax',
-    ]);
+    ];
+}
+
+function expire_session_cookie(): void
+{
+    if (!ini_get('session.use_cookies')) {
+        return;
+    }
+
+    $options = session_cookie_options();
+    unset($options['lifetime']);
+    $options['expires'] = time() - 42000;
+    setcookie(session_name(), '', $options);
+}
+
+if (session_status() === PHP_SESSION_NONE) {
+    $lifetime = session_cookie_lifetime();
+    ini_set('session.gc_maxlifetime', (string) $lifetime);
+    session_set_cookie_params(session_cookie_options($lifetime));
     session_start();
 }
 
@@ -22,10 +47,7 @@ function enforce_session_timeout(): void
     $lastActivity = (int) ($_SESSION['last_activity'] ?? 0);
     if ($lastActivity > 0 && time() - $lastActivity > $timeout) {
         $_SESSION = [];
-        if (ini_get('session.use_cookies')) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'] ?? '', (bool) $params['secure'], (bool) $params['httponly']);
-        }
+        expire_session_cookie();
         session_destroy();
         header('Location: ' . page_url('login', ['error' => 'sesion']));
         exit;
