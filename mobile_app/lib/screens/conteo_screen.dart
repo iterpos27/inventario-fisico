@@ -27,12 +27,16 @@ class ConteoScreen extends StatefulWidget {
 
 class _ConteoScreenState extends State<ConteoScreen> {
   static const Duration _serverAutosaveInterval = Duration(minutes: 3);
+  static const Duration _quantityFocusDuration = Duration(seconds: 5);
 
   final _buscar = TextEditingController();
   final List<ConteoItem> _items = [];
+  final Map<int, TextEditingController> _cantidadControllers = {};
+  final Map<int, FocusNode> _cantidadFocusNodes = {};
   Timer? _searchDebounce;
   Timer? _autosaveDebounce;
   Timer? _autosaveTimer;
+  Timer? _quantityFocusTimer;
   LocalDraftStore? _store;
   bool _loading = true;
   bool _saving = false;
@@ -58,8 +62,15 @@ class _ConteoScreenState extends State<ConteoScreen> {
     _searchDebounce?.cancel();
     _autosaveDebounce?.cancel();
     _autosaveTimer?.cancel();
+    _quantityFocusTimer?.cancel();
     _store?.close();
     _buscar.dispose();
+    for (final controller in _cantidadControllers.values) {
+      controller.dispose();
+    }
+    for (final focusNode in _cantidadFocusNodes.values) {
+      focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -77,6 +88,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
         ..clear()
         ..addAll(localItems);
     }
+    _syncQuantityFields();
     if (mounted) {
       setState(() => _loading = false);
     }
@@ -109,7 +121,8 @@ class _ConteoScreenState extends State<ConteoScreen> {
       });
     }
     try {
-      _conteoVersion = await widget.api.guardarBorrador(widget.conteoId, _items, _conteoVersion);
+      _conteoVersion = await widget.api
+          .guardarBorrador(widget.conteoId, _items, _conteoVersion);
       await _store?.save(widget.conteoId, _items);
       if (!mounted) return;
       final now = TimeOfDay.now().format(context);
@@ -157,6 +170,68 @@ class _ConteoScreenState extends State<ConteoScreen> {
     });
   }
 
+  void _syncQuantityFields() {
+    final activeIds = _items.map((item) => item.productoId).toSet();
+    for (final id in _cantidadControllers.keys.toList()) {
+      if (!activeIds.contains(id)) {
+        _cantidadControllers.remove(id)?.dispose();
+        _cantidadFocusNodes.remove(id)?.dispose();
+      }
+    }
+
+    for (final item in _items) {
+      final controller = _cantidadControllers.putIfAbsent(
+        item.productoId,
+        () => TextEditingController(),
+      );
+      final focusNode =
+          _cantidadFocusNodes.putIfAbsent(item.productoId, FocusNode.new);
+      final value = _formatCantidad(item.cantidad);
+      if (controller.text != value && !focusNode.hasFocus) {
+        controller.text = value;
+      }
+    }
+  }
+
+  TextEditingController _cantidadControllerFor(ConteoItem item) {
+    return _cantidadControllers.putIfAbsent(
+      item.productoId,
+      () => TextEditingController(text: _formatCantidad(item.cantidad)),
+    );
+  }
+
+  FocusNode _cantidadFocusFor(ConteoItem item) {
+    return _cantidadFocusNodes.putIfAbsent(item.productoId, FocusNode.new);
+  }
+
+  void _focusCantidad(int productoId) {
+    _quantityFocusTimer?.cancel();
+    final startedAt = DateTime.now();
+
+    void requestFocus() {
+      if (!mounted) return;
+      final focusNode = _cantidadFocusNodes[productoId];
+      final controller = _cantidadControllers[productoId];
+      if (focusNode == null || controller == null) return;
+      focusNode.requestFocus();
+      controller.selection =
+          TextSelection(baseOffset: 0, extentOffset: controller.text.length);
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => requestFocus());
+    _quantityFocusTimer =
+        Timer.periodic(const Duration(milliseconds: 260), (timer) {
+      if (DateTime.now().difference(startedAt) > _quantityFocusDuration) {
+        timer.cancel();
+        if (_quantityFocusTimer == timer) {
+          _quantityFocusTimer = null;
+        }
+        return;
+      }
+      requestFocus();
+    });
+  }
+
   Future<void> _buscarProductos([String? term]) async {
     final q = (term ?? _buscar.text).trim();
     if (q.length < 3) {
@@ -171,13 +246,15 @@ class _ConteoScreenState extends State<ConteoScreen> {
     try {
       final productos = await widget.api.buscarProductos(q);
       if (mounted) {
-        if (requestId == _searchRequestId && ((term != null && term == q) || _buscar.text.trim() == q)) {
+        if (requestId == _searchRequestId &&
+            ((term != null && term == q) || _buscar.text.trim() == q)) {
           setState(() => _resultados = productos);
         }
       }
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$error')));
     } finally {
       if (mounted && requestId == _searchRequestId) {
         setState(() => _searching = false);
@@ -195,111 +272,45 @@ class _ConteoScreenState extends State<ConteoScreen> {
   }
 
   Future<void> _addProducto(Producto producto) async {
-    final existingIndex = _items.indexWhere((item) => item.productoId == producto.id);
+    final existingIndex =
+        _items.indexWhere((item) => item.productoId == producto.id);
     if (existingIndex >= 0) {
-      final existente = _items[existingIndex];
-      final cambiar = await _confirmarCambioCantidad(existente);
-      if (cambiar != true) return;
-
-      final cantidad = await _pedirCantidad(producto, initialValue: _formatCantidad(existente.cantidad));
-      if (cantidad == null) return;
-
       setState(() {
         final item = _items.removeAt(existingIndex);
-        item.cantidad = cantidad;
         _items.insert(0, item);
         _buscar.clear();
         _resultados = [];
+        _syncQuantityFields();
       });
       await _guardarLocalYProgramarSync();
+      _focusCantidad(producto.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cantidad actualizada: ${producto.codigo}')),
+        SnackBar(
+            content: Text(
+                'Producto ya registrado. Actualice cantidad: ${producto.codigo}')),
       );
       return;
     }
 
-    final cantidad = await _pedirCantidad(producto);
-    if (cantidad == null) return;
-
     setState(() {
-      _items.insert(0, ConteoItem.fromProducto(producto, cantidad));
+      _items.insert(0, ConteoItem.fromProducto(producto, 0));
       _buscar.clear();
       _resultados = [];
+      _syncQuantityFields();
     });
     await _guardarLocalYProgramarSync();
+    _focusCantidad(producto.id);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Producto agregado: ${producto.codigo}')),
     );
   }
 
-  Future<bool?> _confirmarCambioCantidad(ConteoItem item) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Producto ya registrado'),
-        content: Text('El codigo ${item.codigo} ya esta en el conteo con cantidad ${_formatCantidad(item.cantidad)}. Desea cambiar la cantidad?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Cambiar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<double?> _pedirCantidad(Producto producto, {String initialValue = ''}) async {
-    final controller = TextEditingController(text: initialValue);
-    return showDialog<double>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cantidad'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              producto.codigo,
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 4),
-            Text(producto.descripcion),
-            const SizedBox(height: 14),
-            TextField(
-              controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Cantidad',
-                prefixIcon: Icon(Icons.tag),
-              ),
-              onSubmitted: (_) {
-                Navigator.pop(context, double.tryParse(controller.text.replaceAll(',', '.')) ?? 0);
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, double.tryParse(controller.text.replaceAll(',', '.')) ?? 0),
-            child: const Text('Aceptar'),
-          ),
-        ],
-      ),
-    );
-  }
-
   String _formatCantidad(double value) {
-    return value.truncateToDouble() == value ? value.toStringAsFixed(0) : value.toStringAsFixed(2);
+    return value.truncateToDouble() == value
+        ? value.toStringAsFixed(0)
+        : value.toStringAsFixed(2);
   }
 
   Future<void> _eliminarItem(ConteoItem item) async {
@@ -323,6 +334,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
     if (confirm != true) return;
     setState(() {
       _items.removeWhere((current) => current.productoId == item.productoId);
+      _syncQuantityFields();
     });
     await _guardarLocalYProgramarSync();
     if (!mounted) return;
@@ -331,15 +343,12 @@ class _ConteoScreenState extends State<ConteoScreen> {
     );
   }
 
-  Future<void> _editarCantidadItem(ConteoItem item) async {
-    final cantidad = await _pedirCantidad(
-      Producto(id: item.productoId, codigo: item.codigo, descripcion: item.descripcion),
-      initialValue: _formatCantidad(item.cantidad),
-    );
-    if (cantidad == null) return;
+  Future<void> _actualizarCantidadItem(ConteoItem item, String value) async {
+    final cantidad = double.tryParse(value.replaceAll(',', '.')) ?? 0;
     setState(() {
       item.cantidad = cantidad;
     });
+    _quantityFocusTimer?.cancel();
     await _guardarLocalYProgramarSync();
   }
 
@@ -367,10 +376,15 @@ class _ConteoScreenState extends State<ConteoScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Finalizar conteo'),
-        content: const Text('Despues de finalizar no podra editar este conteo.'),
+        content:
+            const Text('Despues de finalizar no podra editar este conteo.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Finalizar')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Finalizar')),
         ],
       ),
     );
@@ -389,7 +403,8 @@ class _ConteoScreenState extends State<ConteoScreen> {
       Navigator.pop(context);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$error')));
     } finally {
       if (mounted) {
         setState(() => _saving = false);
@@ -456,7 +471,8 @@ class _ConteoScreenState extends State<ConteoScreen> {
                                           child: SizedBox(
                                             width: 16,
                                             height: 16,
-                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2),
                                           ),
                                         )
                                       : (_buscar.text.isNotEmpty
@@ -488,7 +504,10 @@ class _ConteoScreenState extends State<ConteoScreen> {
                           const SizedBox(height: 12),
                           Text(
                             'Resultados (${_resultados.length})',
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(fontWeight: FontWeight.w800),
                           ),
                           ..._resultados.map(
                             (producto) => ListTile(
@@ -507,12 +526,18 @@ class _ConteoScreenState extends State<ConteoScreen> {
                 const SizedBox(height: 16),
                 Text(
                   'Productos contados (${_items.length})',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Unidades: ${_formatCantidad(_totalUnidades)}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF4E6380)),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: const Color(0xFF4E6380)),
                 ),
                 const SizedBox(height: 6),
                 Row(
@@ -525,15 +550,22 @@ class _ConteoScreenState extends State<ConteoScreen> {
                       )
                     else
                       Icon(
-                        _pendingSync ? Icons.cloud_off_outlined : Icons.cloud_done_outlined,
+                        _pendingSync
+                            ? Icons.cloud_off_outlined
+                            : Icons.cloud_done_outlined,
                         size: 16,
-                        color: _pendingSync ? const Color(0xFF946200) : const Color(0xFF087443),
+                        color: _pendingSync
+                            ? const Color(0xFF946200)
+                            : const Color(0xFF087443),
                       ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         _syncStatus,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF4E6380)),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: const Color(0xFF4E6380)),
                       ),
                     ),
                   ],
@@ -553,18 +585,30 @@ class _ConteoScreenState extends State<ConteoScreen> {
                         title: Text(item.codigo),
                         subtitle: Text(item.descripcion),
                         trailing: SizedBox(
-                          width: 144,
+                          width: 136,
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () => _editarCantidadItem(item),
-                                  style: OutlinedButton.styleFrom(
-                                    minimumSize: const Size(0, 40),
-                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                              SizedBox(
+                                width: 78,
+                                child: TextField(
+                                  controller: _cantidadControllerFor(item),
+                                  focusNode: _cantidadFocusFor(item),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                  textAlign: TextAlign.center,
+                                  decoration: const InputDecoration(
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 10),
+                                    border: OutlineInputBorder(),
                                   ),
-                                  child: Text(_formatCantidad(item.cantidad)),
+                                  onChanged: (value) {
+                                    _actualizarCantidadItem(item, value);
+                                  },
+                                  onSubmitted: (_) =>
+                                      FocusScope.of(context).unfocus(),
                                 ),
                               ),
                               IconButton(
