@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/conteo_item.dart';
 import '../models/producto.dart';
@@ -31,15 +30,17 @@ class _ConteoScreenState extends State<ConteoScreen> {
 
   final _buscar = TextEditingController();
   final List<ConteoItem> _items = [];
-  late LocalDraftStore _store;
   Timer? _searchDebounce;
   Timer? _autosaveDebounce;
   Timer? _autosaveTimer;
+  LocalDraftStore? _store;
   bool _loading = true;
   bool _saving = false;
   bool _searching = false;
   bool _autosaving = false;
   bool _pendingSync = false;
+  int _conteoVersion = 0;
+  int _searchRequestId = 0;
   String _syncStatus = 'Guardado local';
   List<Producto> _resultados = [];
 
@@ -57,19 +58,20 @@ class _ConteoScreenState extends State<ConteoScreen> {
     _searchDebounce?.cancel();
     _autosaveDebounce?.cancel();
     _autosaveTimer?.cancel();
+    _store?.close();
     _buscar.dispose();
     super.dispose();
   }
 
   Future<void> _init() async {
-    final prefs = await SharedPreferences.getInstance();
-    _store = LocalDraftStore(prefs);
-    final localItems = _store.load(widget.conteoId);
+    _store = await LocalDraftStore.open();
+    final localItems = await _store!.load(widget.conteoId);
     try {
-      final remoteItems = await widget.api.fetchDetalle(widget.conteoId);
+      final remoteSnapshot = await widget.api.fetchDetalle(widget.conteoId);
+      _conteoVersion = remoteSnapshot.version;
       _items
         ..clear()
-        ..addAll(localItems.isNotEmpty ? localItems : remoteItems);
+        ..addAll(localItems.isNotEmpty ? localItems : remoteSnapshot.items);
     } catch (_) {
       _items
         ..clear()
@@ -86,7 +88,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
   }
 
   Future<void> _guardarLocalYProgramarSync() async {
-    await _store.save(widget.conteoId, _items);
+    await _store?.save(widget.conteoId, _items);
     if (!mounted) return;
     setState(() {
       _pendingSync = true;
@@ -107,8 +109,8 @@ class _ConteoScreenState extends State<ConteoScreen> {
       });
     }
     try {
-      await widget.api.guardarBorrador(widget.conteoId, _items);
-      await _store.save(widget.conteoId, _items);
+      _conteoVersion = await widget.api.guardarBorrador(widget.conteoId, _items, _conteoVersion);
+      await _store?.save(widget.conteoId, _items);
       if (!mounted) return;
       final now = TimeOfDay.now().format(context);
       setState(() {
@@ -121,7 +123,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
         );
       }
     } catch (error) {
-      await _store.save(widget.conteoId, _items);
+      await _store?.save(widget.conteoId, _items);
       if (!mounted) return;
       setState(() {
         _pendingSync = true;
@@ -142,7 +144,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
   void _onBuscarChanged(String value) {
     _searchDebounce?.cancel();
     final q = value.trim();
-    if (q.length < 2) {
+    if (q.length < 3) {
       setState(() {
         _resultados = [];
         _searching = false;
@@ -150,25 +152,26 @@ class _ConteoScreenState extends State<ConteoScreen> {
       return;
     }
     setState(() => _searching = true);
-    _searchDebounce = Timer(const Duration(milliseconds: 280), () {
+    _searchDebounce = Timer(const Duration(milliseconds: 420), () {
       _buscarProductos(q);
     });
   }
 
   Future<void> _buscarProductos([String? term]) async {
     final q = (term ?? _buscar.text).trim();
-    if (q.length < 2) {
+    if (q.length < 3) {
       setState(() {
         _resultados = [];
         _searching = false;
       });
       return;
     }
+    final requestId = ++_searchRequestId;
     setState(() => _searching = true);
     try {
       final productos = await widget.api.buscarProductos(q);
       if (mounted) {
-        if ((term != null && term == q) || _buscar.text.trim() == q) {
+        if (requestId == _searchRequestId && ((term != null && term == q) || _buscar.text.trim() == q)) {
           setState(() => _resultados = productos);
         }
       }
@@ -176,7 +179,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
     } finally {
-      if (mounted) {
+      if (mounted && requestId == _searchRequestId) {
         setState(() => _searching = false);
       }
     }
@@ -377,8 +380,8 @@ class _ConteoScreenState extends State<ConteoScreen> {
     try {
       _autosaveDebounce?.cancel();
       await _sincronizarBorrador(silent: true);
-      await widget.api.finalizarConteo(widget.conteoId, _items);
-      await _store.clear(widget.conteoId);
+      await widget.api.finalizarConteo(widget.conteoId, _items, _conteoVersion);
+      await _store?.clear(widget.conteoId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Conteo finalizado')),

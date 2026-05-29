@@ -187,6 +187,9 @@ async function guardarBorrador(auto = false) {
     const data = await response.json();
     if (!response.ok || !data.ok) throw new Error(data.message || 'Error');
     $('conteoId').value = data.conteo_id;
+    if ($('conteoVersion') && data.conteo_version !== undefined) {
+      $('conteoVersion').value = data.conteo_version;
+    }
     setSaveStatus(`Guardado ${formatTime(new Date())}`);
     if (!auto) showManualSaveModal();
     return data;
@@ -214,6 +217,9 @@ async function finalizarConteo() {
     });
     const data = await response.json();
     if (!response.ok || !data.ok) throw new Error(data.message || 'Error');
+    if ($('conteoVersion') && data.conteo_version !== undefined) {
+      $('conteoVersion').value = data.conteo_version;
+    }
     showMessage('Conteo finalizado correctamente');
     setTimeout(() => {
       window.location.href = `${baseUrl}/reportes?estado=finalizado`;
@@ -320,6 +326,7 @@ function buildPayload() {
   return {
     csrf_token: $('csrfToken').value,
     conteo_id: Number($('conteoId').value || 0),
+    conteo_version: Number($('conteoVersion')?.value || 0),
     nombre_conteo: $('nombreConteo')?.value.trim() || '',
     items: Array.from(state.items.values()),
   };

@@ -19,8 +19,16 @@ $styleVersion = file_exists(PUBLIC_PATH . '/assets/css/style.css')
     ? (string) filemtime(PUBLIC_PATH . '/assets/css/style.css')
     : APP_VERSION;
 $bodyRoleClass = 'app-role-guest';
+$roleStylesheets = [];
 if (function_exists('is_logged_in') && is_logged_in()) {
-    $bodyRoleClass = current_user_role() === 'admin' ? 'app-role-admin' : 'app-role-usuario';
+    if (current_user_role() === 'admin') {
+        $bodyRoleClass = 'app-role-admin';
+        $roleStylesheets[] = 'admin.css';
+    } else {
+        $bodyRoleClass = 'app-role-usuario';
+        $roleStylesheets[] = 'user.css';
+        $roleStylesheets[] = 'user-mobile.css';
+    }
 }
 ?>
 <!doctype html>
@@ -32,6 +40,12 @@ if (function_exists('is_logged_in') && is_logged_in()) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="<?= asset_url('css/style.css') ?>?v=<?= e($styleVersion) ?>" rel="stylesheet">
+    <?php foreach ($roleStylesheets as $roleStylesheet): ?>
+        <?php $roleStylePath = PUBLIC_PATH . '/assets/css/' . $roleStylesheet; ?>
+        <?php if (file_exists($roleStylePath)): ?>
+            <link href="<?= asset_url('css/' . $roleStylesheet) ?>?v=<?= e((string) filemtime($roleStylePath)) ?>" rel="stylesheet">
+        <?php endif; ?>
+    <?php endforeach; ?>
 </head>
 <body class="<?= e($bodyRoleClass) ?>">
 

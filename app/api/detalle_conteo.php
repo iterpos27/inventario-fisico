@@ -7,13 +7,14 @@ if ($conteoId <= 0) {
     api_json(['ok' => false, 'message' => 'Conteo invalido'], 422);
 }
 
-$stmt = $pdo->prepare('SELECT id FROM conteos WHERE id = ? AND usuario_id = ? LIMIT 1');
+$stmt = $pdo->prepare('SELECT id, version FROM conteos WHERE id = ? AND usuario_id = ? LIMIT 1');
 $stmt->execute([$conteoId, (int) $user['id']]);
-if (!$stmt->fetch()) {
+$conteo = $stmt->fetch();
+if (!$conteo) {
     api_json(['ok' => false, 'message' => 'Conteo no disponible'], 404);
 }
 
 $stmt = $pdo->prepare('SELECT producto_id, codigo, descripcion, cantidad FROM conteo_detalle WHERE conteo_id = ? ORDER BY id');
 $stmt->execute([$conteoId]);
 
-api_json(['ok' => true, 'items' => $stmt->fetchAll()]);
+api_json(['ok' => true, 'conteo_version' => (int) $conteo['version'], 'items' => $stmt->fetchAll()]);

@@ -1,0 +1,12 @@
+/* Admin-only layer. Keep dashboard, CRUD and report refinements here. */
+.app-role-admin .count-item {
+  box-shadow: none;
+}
+
+.app-role-admin .table-responsive {
+  overflow-x: auto;
+}
+
+.app-role-admin .content-panel {
+  min-width: 0;
+}

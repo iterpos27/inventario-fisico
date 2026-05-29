@@ -12,7 +12,7 @@ final class ConteoRepository
     {
         $lockSql = $lock ? ' FOR UPDATE' : '';
         $stmt = $this->pdo->prepare(
-            "SELECT c.id, c.toma_id, t.fecha_habilitacion, t.fecha_cierre, t.hora_inicio, t.hora_fin
+            "SELECT c.id, c.toma_id, c.version, t.fecha_habilitacion, t.fecha_cierre, t.hora_inicio, t.hora_fin
              FROM conteos c
              INNER JOIN tomas_fisicas t ON t.id = c.toma_id
              WHERE c.id = ? AND c.usuario_id = ? AND c.estado = 'borrador' AND t.estado = 'abierta'
@@ -22,6 +22,28 @@ final class ConteoRepository
         $conteo = $stmt->fetch();
 
         return $conteo ?: null;
+    }
+
+    public function assertExpectedVersion(array $conteo, int $expectedVersion): void
+    {
+        if ($expectedVersion <= 0) {
+            return;
+        }
+
+        if ((int) ($conteo['version'] ?? 0) !== $expectedVersion) {
+            throw new RuntimeException('El conteo cambio desde otro dispositivo. Actualice e intente de nuevo.');
+        }
+    }
+
+    public function bumpVersion(int $conteoId): int
+    {
+        $stmt = $this->pdo->prepare('UPDATE conteos SET version = version + 1, updated_at = NOW() WHERE id = ?');
+        $stmt->execute([$conteoId]);
+
+        $stmt = $this->pdo->prepare('SELECT version FROM conteos WHERE id = ? LIMIT 1');
+        $stmt->execute([$conteoId]);
+
+        return (int) $stmt->fetchColumn();
     }
 
     public function lockToma(int $tomaId): bool
@@ -36,7 +58,7 @@ final class ConteoRepository
     {
         $stmt = $this->pdo->prepare(
             "UPDATE conteos
-             SET estado = 'finalizado', fecha_finalizacion = COALESCE(fecha_finalizacion, NOW()), archivo_excel = ?
+             SET estado = 'finalizado', fecha_finalizacion = COALESCE(fecha_finalizacion, NOW()), archivo_excel = ?, updated_at = NOW()
              WHERE id = ?"
         );
         $stmt->execute([$archivoExcel, $conteoId]);

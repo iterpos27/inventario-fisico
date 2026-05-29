@@ -142,6 +142,8 @@ function ensure_schema(PDO $pdo): void
             fecha_inicio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             fecha_finalizacion DATETIME NULL,
             archivo_excel VARCHAR(255) NULL,
+            version INT UNSIGNED NOT NULL DEFAULT 0,
+            updated_at DATETIME NULL,
             CONSTRAINT fk_conteos_toma FOREIGN KEY (toma_id) REFERENCES tomas_fisicas(id),
             CONSTRAINT fk_conteos_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
             INDEX idx_conteos_estado (estado),
@@ -213,6 +215,8 @@ function ensure_schema(PDO $pdo): void
     );
 
     ensure_column_exists($pdo, 'conteos', 'toma_id', 'toma_id INT UNSIGNED NULL AFTER id');
+    ensure_column_exists($pdo, 'conteos', 'version', 'version INT UNSIGNED NOT NULL DEFAULT 0 AFTER archivo_excel');
+    ensure_column_exists($pdo, 'conteos', 'updated_at', 'updated_at DATETIME NULL AFTER version');
     ensure_column_exists($pdo, 'tomas_fisicas', 'fecha_habilitacion', 'fecha_habilitacion DATE NULL AFTER fecha_toma');
     ensure_column_exists($pdo, 'tomas_fisicas', 'fecha_cierre', 'fecha_cierre DATE NULL AFTER fecha_habilitacion');
     ensure_column_exists($pdo, 'tomas_fisicas', 'hora_inicio', 'hora_inicio TIME NULL AFTER fecha_cierre');

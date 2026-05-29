@@ -7,6 +7,7 @@ $user = api_require_user($pdo);
 $payload = api_payload();
 $items = $payload['items'] ?? [];
 $conteoId = (int) ($payload['conteo_id'] ?? 0);
+$expectedVersion = (int) ($payload['conteo_version'] ?? 0);
 
 if ($conteoId <= 0 || !is_array($items) || count($items) === 0) {
     api_json(['ok' => false, 'message' => 'Datos incompletos'], 422);
@@ -21,17 +22,23 @@ try {
         throw new RuntimeException('Conteo no disponible');
     }
     validar_ventana_toma($conteo);
+    $conteos->assertExpectedVersion($conteo, $expectedVersion);
 
     $lineas = reemplazar_detalle_conteo($pdo, $conteoId, $items);
     if ($lineas === 0) {
         throw new RuntimeException('Sin productos validos');
     }
+    $conteoVersion = $conteos->bumpVersion($conteoId);
 
     $pdo->commit();
-    api_json(['ok' => true, 'conteo_id' => $conteoId, 'lineas' => $lineas]);
+    api_json(['ok' => true, 'conteo_id' => $conteoId, 'conteo_version' => $conteoVersion, 'lineas' => $lineas]);
 } catch (Throwable $exception) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    api_json(['ok' => false, 'message' => $exception->getMessage()], 422);
+    $isVersionConflict = str_contains($exception->getMessage(), 'cambio desde otro dispositivo');
+    api_json([
+        'ok' => false,
+        'message' => $isVersionConflict ? $exception->getMessage() : 'No se pudo guardar el borrador',
+    ], $isVersionConflict ? 409 : 422);
 }

@@ -23,6 +23,7 @@ if (!is_array($payload) || !verify_csrf($payload['csrf_token'] ?? null)) {
 
 $items = $payload['items'] ?? [];
 $conteoId = (int) ($payload['conteo_id'] ?? 0);
+$expectedVersion = (int) ($payload['conteo_version'] ?? 0);
 
 if (!is_array($items) || count($items) === 0) {
     http_response_code(422);
@@ -44,18 +45,21 @@ try {
         throw new RuntimeException('Conteo no disponible');
     }
     validar_ventana_toma($conteo);
+    $conteos->assertExpectedVersion($conteo, $expectedVersion);
     if (reemplazar_detalle_conteo($pdo, $conteoId, $items) === 0) {
         throw new RuntimeException('Sin productos validos');
     }
+    $conteoVersion = $conteos->bumpVersion($conteoId);
 
     $pdo->commit();
-    echo json_encode(['ok' => true, 'conteo_id' => $conteoId, 'message' => 'Borrador guardado']);
+    echo json_encode(['ok' => true, 'conteo_id' => $conteoId, 'conteo_version' => $conteoVersion, 'message' => 'Borrador guardado']);
 } catch (Throwable $exception) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'message' => 'No se pudo guardar el borrador']);
+    $isVersionConflict = str_contains($exception->getMessage(), 'cambio desde otro dispositivo');
+    http_response_code($isVersionConflict ? 409 : 500);
+    echo json_encode(['ok' => false, 'message' => $isVersionConflict ? $exception->getMessage() : 'No se pudo guardar el borrador']);
 }
 
 

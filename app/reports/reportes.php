@@ -45,8 +45,8 @@ $rangeSql = "SELECT DATE(fecha_inicio) AS dia,
                     SUM(CASE WHEN estado = 'finalizado' THEN 1 ELSE 0 END) AS finalizados,
                     SUM(CASE WHEN estado = 'borrador' THEN 1 ELSE 0 END) AS borradores
              FROM conteos
-             WHERE DATE(fecha_inicio) BETWEEN ? AND ?";
-$rangeParams = [$fechaDesde, $fechaHasta];
+             WHERE fecha_inicio >= ? AND fecha_inicio < DATE_ADD(?, INTERVAL 1 DAY)";
+$rangeParams = [$fechaDesde . ' 00:00:00', $fechaHasta . ' 00:00:00'];
 if (current_user_role() !== 'admin') {
     $rangeSql .= ' AND usuario_id = ?';
     $rangeParams[] = (int) $_SESSION['usuario_id'];

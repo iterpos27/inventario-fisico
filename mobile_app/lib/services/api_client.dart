@@ -8,6 +8,16 @@ import '../models/conteo_item.dart';
 import '../models/producto.dart';
 import '../models/toma.dart';
 
+class ConteoDetalleSnapshot {
+  const ConteoDetalleSnapshot({
+    required this.items,
+    required this.version,
+  });
+
+  final List<ConteoItem> items;
+  final int version;
+}
+
 class ApiClient {
   ApiClient(
     this._prefs, {
@@ -84,11 +94,16 @@ class ApiClient {
     return int.parse('${data['conteo_id']}');
   }
 
-  Future<List<ConteoItem>> fetchDetalle(int conteoId) async {
+  Future<ConteoDetalleSnapshot> fetchDetalle(int conteoId) async {
     final data = await _get('/api/detalle_conteo?conteo_id=$conteoId');
-    return (data['items'] as List? ?? [])
+    final items = (data['items'] as List? ?? [])
         .map((item) => ConteoItem.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList();
+
+    return ConteoDetalleSnapshot(
+      items: items,
+      version: int.tryParse('${data['conteo_version'] ?? 0}') ?? 0,
+    );
   }
 
   Future<List<Producto>> buscarProductos(String q) async {
@@ -98,16 +113,19 @@ class ApiClient {
         .toList();
   }
 
-  Future<void> guardarBorrador(int conteoId, List<ConteoItem> items) async {
-    await _post('/api/guardar_borrador', {
+  Future<int> guardarBorrador(int conteoId, List<ConteoItem> items, int conteoVersion) async {
+    final data = await _post('/api/guardar_borrador', {
       'conteo_id': conteoId,
+      'conteo_version': conteoVersion,
       'items': items.map((item) => item.toJson()).toList(),
     });
+    return int.tryParse('${data['conteo_version'] ?? conteoVersion}') ?? conteoVersion;
   }
 
-  Future<String?> finalizarConteo(int conteoId, List<ConteoItem> items) async {
+  Future<String?> finalizarConteo(int conteoId, List<ConteoItem> items, int conteoVersion) async {
     final data = await _post('/api/finalizar_conteo', {
       'conteo_id': conteoId,
+      'conteo_version': conteoVersion,
       'items': items.map((item) => item.toJson()).toList(),
     });
     final url = data['download_url'];
@@ -115,7 +133,9 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> _get(String path) async {
-    final response = await http.get(Uri.parse('$baseUrl$path'), headers: _headers());
+    final response = await http
+        .get(Uri.parse('$baseUrl$path'), headers: _headers())
+        .timeout(const Duration(seconds: 15));
     return _decode(response);
   }
 
@@ -124,11 +144,13 @@ class ApiClient {
     Map<String, dynamic> body, {
     bool authenticated = true,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl$path'),
-      headers: _headers(authenticated: authenticated),
-      body: jsonEncode(body),
-    );
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl$path'),
+          headers: _headers(authenticated: authenticated),
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 15));
     return _decode(response);
   }
 
@@ -141,8 +163,16 @@ class ApiClient {
   }
 
   Map<String, dynamic> _decode(http.Response response) {
-    final body = jsonDecode(response.body.isEmpty ? '{}' : response.body);
-    final data = Map<String, dynamic>.from(body as Map);
+    final dynamic body;
+    try {
+      body = jsonDecode(response.body.isEmpty ? '{}' : response.body);
+    } catch (_) {
+      throw const ApiException('Respuesta invalida del servidor');
+    }
+    if (body is! Map) {
+      throw const ApiException('Respuesta invalida del servidor');
+    }
+    final data = Map<String, dynamic>.from(body);
     if (response.statusCode >= 400 || data['ok'] == false) {
       throw ApiException('${data['message'] ?? 'Error de servidor'}');
     }

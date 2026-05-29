@@ -1,0 +1,12 @@
+/* User desktop layer. Shared admin styles should not be added here. */
+.app-role-usuario .user-conteo-workspace {
+  max-width: 1120px;
+}
+
+.app-role-usuario .count-item {
+  min-width: 0;
+}
+
+.app-role-usuario .search-results {
+  z-index: 30;
+}

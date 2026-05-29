@@ -111,6 +111,7 @@ if (current_user_role() !== 'admin') {
 
     <input type="hidden" id="csrfToken" value="<?= csrf_token() ?>">
     <input type="hidden" id="conteoId" value="<?= (int) ($conteo['id'] ?? 0) ?>">
+    <input type="hidden" id="conteoVersion" value="<?= (int) ($conteo['version'] ?? 0) ?>">
     <input type="hidden" id="conteoCreado" value="<?= $conteo ? '1' : '0' ?>">
     <input type="hidden" id="nombreConteo" value="<?= e($conteo['nombre_conteo'] ?? '') ?>">
 

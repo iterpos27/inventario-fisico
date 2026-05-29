@@ -1,0 +1,14 @@
+/* User mobile layer. Only mobile web inventory flow belongs here. */
+@media (max-width: 768px) {
+  .app-role-usuario .user-conteo-shell {
+    padding-inline: 10px;
+  }
+
+  .app-role-usuario .count-item {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .app-role-usuario .count-item-actions input {
+    min-height: 46px;
+  }
+}
