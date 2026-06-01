@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once APP_INCLUDES_PATH . '/search_cache.php';
+
 final class ProductRepository
 {
     public function __construct(private PDO $pdo)
@@ -89,6 +91,26 @@ final class ProductRepository
 
         $searchIsCode = preg_match('/^\d+$/', $search) === 1;
         if ($searchIsCode) {
+            $stmt = $this->pdo->prepare(
+                'SELECT id, codigo, descripcion
+                 FROM productos
+                 WHERE estado = 1 AND codigo = ?
+                 LIMIT 1'
+            );
+            $stmt->execute([$search]);
+            $exact = $stmt->fetchAll();
+            if ($exact) {
+                return $exact;
+            }
+        }
+
+        $cacheKey = search_cache_key('product_search_active', [mb_strtolower($search), $limit]);
+        $cached = search_cache_get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        if ($searchIsCode) {
             $fullTextQuery = $this->fullTextBooleanQuery($search);
             if ($fullTextQuery !== '') {
                 $stmt = $this->pdo->prepare(
@@ -116,7 +138,9 @@ final class ProductRepository
                 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
                 $stmt->execute();
 
-                return $stmt->fetchAll();
+                $results = $stmt->fetchAll();
+                search_cache_set($cacheKey, $results);
+                return $results;
             }
 
             $stmt = $this->pdo->prepare(
@@ -144,7 +168,9 @@ final class ProductRepository
                 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
                 $stmt->execute();
 
-                return $stmt->fetchAll();
+                $results = $stmt->fetchAll();
+                search_cache_set($cacheKey, $results);
+                return $results;
             }
 
             $stmt = $this->pdo->prepare(
@@ -159,7 +185,9 @@ final class ProductRepository
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
 
-        return $stmt->fetchAll();
+        $results = $stmt->fetchAll();
+        search_cache_set($cacheKey, $results);
+        return $results;
     }
 
     /**

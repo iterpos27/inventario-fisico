@@ -4,6 +4,20 @@
     padding-inline: 10px;
   }
 
+  .app-role-usuario .count-tool {
+    padding: 12px;
+  }
+
+  .app-role-usuario .search-input {
+    min-height: 48px;
+    padding-right: 46px;
+    font-size: 1rem;
+  }
+
+  .app-role-usuario .search-clear {
+    right: 8px;
+  }
+
   .app-role-usuario .count-item {
     grid-template-columns: 34px minmax(0, 1fr) 64px;
     gap: 6px;

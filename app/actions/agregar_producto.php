@@ -3,6 +3,7 @@ require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 require_once APP_INCLUDES_PATH . '/observability.php';
 require_once APP_INCLUDES_PATH . '/product_codes.php';
+require_once APP_INCLUDES_PATH . '/search_cache.php';
 require_admin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?? null)) {
@@ -25,6 +26,7 @@ try {
          ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion), estado = 1'
     );
     $stmt->execute([$codigo, $descripcion]);
+    search_cache_invalidate();
     audit_log($pdo, 'save', 'producto', null, ['codigo' => $codigo]);
     header('Location: ' . page_url('productos', ['msg' => 'Producto guardado correctamente']));
 } catch (Throwable $exception) {

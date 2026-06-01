@@ -262,7 +262,6 @@ if (current_user_role() !== 'admin') {
         <div class="position-relative">
             <input class="form-control form-control-lg search-input" id="buscarProducto" placeholder="Codigo o descripcion" autocomplete="off">
             <button class="search-clear d-none" id="limpiarBusqueda" type="button" aria-label="Limpiar busqueda"><i class="bi bi-x-circle-fill"></i></button>
-            <button class="search-scan" id="abrirEscaner" type="button" aria-label="Escanear codigo de barras"><i class="bi bi-upc-scan"></i></button>
             <div id="resultadosBusqueda" class="search-results d-none"></div>
         </div>
     </section>
@@ -311,29 +310,9 @@ if (current_user_role() !== 'admin') {
     </div>
 </div>
 
-<div class="modal fade" id="modalEscanerProducto" tabindex="-1" aria-labelledby="modalEscanerProductoTitulo" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content app-confirm-modal scanner-modal">
-            <div class="modal-header">
-                <h2 class="modal-title fs-5" id="modalEscanerProductoTitulo">Escanear codigo</h2>
-                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body">
-                <div class="scanner-view">
-                    <video id="videoEscanerProducto" playsinline muted></video>
-                    <div class="scanner-frame" aria-hidden="true"></div>
-                </div>
-                <p id="estadoEscanerProducto" class="scanner-status mb-0">Preparando camara...</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline-primary" type="button" data-bs-dismiss="modal">Cancelar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
 window.CONTEO_INICIAL = <?= json_encode($detalles, JSON_UNESCAPED_UNICODE) ?>;
+window.CONTEO_LOADED_AT = <?= time() * 1000 ?>;
 window.BASE_URL = '<?= BASE_URL ?>';
 window.USER_ROLE = '<?= e(current_user_role()) ?>';
 </script>

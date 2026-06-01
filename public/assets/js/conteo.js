@@ -9,10 +9,11 @@ const state = {
   highlightedId: null,
   highlightTimer: null,
   saveModalTimer: null,
-  scannerStream: null,
-  scannerTimer: null,
-  scannerActive: false,
   quantityFocusTimer: null,
+  dirty: false,
+  pendingUpsert: new Map(),
+  pendingRemove: new Set(),
+  localBackupTimer: null,
 };
 
 for (const item of window.CONTEO_INICIAL || []) {
@@ -48,12 +49,107 @@ function showMessage(message, type = 'success') {
   setTimeout(() => box.classList.add('d-none'), 3500);
 }
 
+function conteoId() {
+  return Number($('conteoId')?.value || 0);
+}
+
+function conteoVersion() {
+  return Number($('conteoVersion')?.value || 0);
+}
+
+function localDraftKey() {
+  const id = conteoId();
+  return id > 0 ? `conteo_draft_${id}` : '';
+}
+
+function persistLocalDraft() {
+  const key = localDraftKey();
+  if (!key || state.items.size === 0) return;
+  localStorage.setItem(key, JSON.stringify({
+    items: Array.from(state.items.values()),
+    conteoVersion: conteoVersion(),
+    savedAt: Date.now(),
+  }));
+}
+
+function scheduleLocalBackup() {
+  clearTimeout(state.localBackupTimer);
+  state.localBackupTimer = setTimeout(persistLocalDraft, 2000);
+}
+
+function clearLocalDraft() {
+  const key = localDraftKey();
+  if (key) localStorage.removeItem(key);
+}
+
+function recoverLocalDraftIfNeeded() {
+  const key = localDraftKey();
+  if (!key) return;
+  const raw = localStorage.getItem(key);
+  if (!raw) return;
+
+  let draft = null;
+  try {
+    draft = JSON.parse(raw);
+  } catch (error) {
+    localStorage.removeItem(key);
+    return;
+  }
+
+  const draftItems = Array.isArray(draft?.items) ? draft.items : [];
+  const loadedAt = Number(window.CONTEO_LOADED_AT || 0);
+  const isNewer = Number(draft?.savedAt || 0) > loadedAt;
+  if (draftItems.length === 0 || (!isNewer && draftItems.length <= state.items.size)) {
+    return;
+  }
+
+  if (!confirm('Hay un borrador local mas reciente. Desea recuperarlo?')) {
+    return;
+  }
+
+  state.items = new Map();
+  for (const item of draftItems) {
+    if (!item || !item.producto_id) continue;
+    state.items.set(String(item.producto_id), {
+      producto_id: Number(item.producto_id),
+      codigo: item.codigo,
+      descripcion: item.descripcion,
+      cantidad: item.cantidad,
+    });
+  }
+  if ($('conteoVersion') && draft.conteoVersion !== undefined) {
+    $('conteoVersion').value = Number(draft.conteoVersion || 0);
+  }
+  state.pendingUpsert = new Map(Array.from(state.items.entries()).map(([key, item]) => [key, { ...item }]));
+  state.pendingRemove.clear();
+  markDirty();
+}
+
+function markDirty() {
+  state.dirty = true;
+  setSaveStatus('Cambios pendientes por guardar.');
+  scheduleLocalBackup();
+}
+
+function queueUpsert(item) {
+  const key = String(item.producto_id);
+  state.pendingRemove.delete(key);
+  state.pendingUpsert.set(key, { ...item });
+}
+
+function queueRemove(productId) {
+  const key = String(productId);
+  state.pendingUpsert.delete(key);
+  state.pendingRemove.add(key);
+}
+
 function renderList() {
   const list = $('listaProductos');
   const empty = $('listaVacia');
-  const items = Array.from(state.items.values());
-  $('contadorLineas').textContent = items.length;
-  empty.classList.toggle('d-none', items.length > 0);
+  const allItems = Array.from(state.items.values());
+  const items = allItems.slice(0, 50);
+  $('contadorLineas').textContent = allItems.length;
+  empty.classList.toggle('d-none', allItems.length > 0);
   list.innerHTML = '';
 
   for (const item of items) {
@@ -88,6 +184,31 @@ function escapeHtml(value) {
 
 let searchAbortController = null;
 let searchRequestId = 0;
+const SEARCH_CACHE_KEY = 'conteo_recent_searches_v1';
+const SEARCH_CACHE_LIMIT = 100;
+
+function readSearchCache() {
+  try {
+    return JSON.parse(sessionStorage.getItem(SEARCH_CACHE_KEY) || '{}');
+  } catch (error) {
+    return {};
+  }
+}
+
+function getCachedSearch(term) {
+  const cache = readSearchCache();
+  const entry = cache[term.toLowerCase()];
+  return Array.isArray(entry?.results) ? entry.results : null;
+}
+
+function setCachedSearch(term, results) {
+  const cache = readSearchCache();
+  cache[term.toLowerCase()] = { results, savedAt: Date.now() };
+  const entries = Object.entries(cache)
+    .sort((a, b) => (b[1].savedAt || 0) - (a[1].savedAt || 0))
+    .slice(0, SEARCH_CACHE_LIMIT);
+  sessionStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify(Object.fromEntries(entries)));
+}
 
 async function buscarProductos(q) {
   const results = $('resultadosBusqueda');
@@ -102,6 +223,12 @@ async function buscarProductos(q) {
   if (term.length < 3) {
     results.classList.add('d-none');
     results.innerHTML = '';
+    return;
+  }
+
+  const cached = getCachedSearch(term);
+  if (cached) {
+    renderSearchResults(cached);
     return;
   }
 
@@ -120,6 +247,12 @@ async function buscarProductos(q) {
   }
 
   if (requestId !== searchRequestId) return;
+  setCachedSearch(term, products);
+  renderSearchResults(products);
+}
+
+function renderSearchResults(products) {
+  const results = $('resultadosBusqueda');
   results.innerHTML = '';
 
   for (const product of products) {
@@ -182,7 +315,8 @@ function addProductLine(product) {
 
   highlightItem(id);
   renderList();
-  setSaveStatus('Cambios pendientes por guardar.');
+  queueUpsert(state.items.get(id));
+  markDirty();
   $('resultadosBusqueda').classList.add('d-none');
   $('buscarProducto').value = '';
   toggleSearchClear();
@@ -190,14 +324,16 @@ function addProductLine(product) {
 }
 
 async function guardarBorrador(auto = false) {
-  if (state.saving || state.items.size === 0) return null;
+  if (state.saving || (state.items.size === 0 && state.pendingRemove.size === 0)) return null;
+  if (auto && !state.dirty) return null;
   state.saving = true;
   setSaveStatus(auto ? 'Autoguardando...' : 'Guardando borrador...');
   try {
-    const response = await fetch(`${baseUrl}/actions/guardar_borrador`, {
+    const hasDelta = state.pendingUpsert.size > 0 || state.pendingRemove.size > 0;
+    const response = await fetch(`${baseUrl}/actions/${hasDelta ? 'guardar_cambios' : 'guardar_borrador'}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(buildPayload()),
+      body: JSON.stringify(hasDelta ? buildDeltaPayload() : buildPayload()),
     });
     const data = await response.json();
     if (!response.ok || !data.ok) throw new Error(data.message || 'Error');
@@ -206,6 +342,10 @@ async function guardarBorrador(auto = false) {
       $('conteoVersion').value = data.conteo_version;
     }
     setSaveStatus(`Guardado ${formatTime(new Date())}`);
+    state.dirty = false;
+    state.pendingUpsert.clear();
+    state.pendingRemove.clear();
+    persistLocalDraft();
     if (!auto) showManualSaveModal();
     return data;
   } catch (error) {
@@ -235,6 +375,7 @@ async function finalizarConteo() {
     if ($('conteoVersion') && data.conteo_version !== undefined) {
       $('conteoVersion').value = data.conteo_version;
     }
+    clearLocalDraft();
     showMessage('Conteo finalizado correctamente');
     setTimeout(() => {
       window.location.href = `${baseUrl}/reportes?estado=finalizado`;
@@ -340,10 +481,20 @@ function renderNombrePreview() {
 function buildPayload() {
   return {
     csrf_token: $('csrfToken').value,
-    conteo_id: Number($('conteoId').value || 0),
-    conteo_version: Number($('conteoVersion')?.value || 0),
+    conteo_id: conteoId(),
+    conteo_version: conteoVersion(),
     nombre_conteo: $('nombreConteo')?.value.trim() || '',
     items: Array.from(state.items.values()),
+  };
+}
+
+function buildDeltaPayload() {
+  return {
+    csrf_token: $('csrfToken').value,
+    conteo_id: conteoId(),
+    conteo_version: conteoVersion(),
+    upsert: Array.from(state.pendingUpsert.values()),
+    remove: Array.from(state.pendingRemove).map((id) => Number(id)),
   };
 }
 
@@ -351,17 +502,14 @@ let searchTimer = null;
 $('buscarProducto')?.addEventListener('input', (event) => {
   clearTimeout(searchTimer);
   toggleSearchClear();
-  searchTimer = setTimeout(() => buscarProductos(event.target.value), 420);
+  const debounceMs = window.matchMedia('(max-width: 768px)').matches ? 500 : 420;
+  searchTimer = setTimeout(() => buscarProductos(event.target.value), debounceMs);
 });
 
 $('limpiarBusqueda')?.addEventListener('click', () => {
   clearSearch();
   $('buscarProducto')?.focus();
 });
-$('abrirEscaner')?.addEventListener('click', () => {
-  startScanner();
-});
-
 $('crearConteo')?.addEventListener('click', crearConteo);
 $('seleccionarUsuarios')?.addEventListener('click', () => {
   document.querySelectorAll('.participant-check').forEach((input) => {
@@ -388,9 +536,10 @@ $('listaProductos')?.addEventListener('input', (event) => {
   const id = event.target.dataset.edit;
   if (!id || !state.items.has(id)) return;
   state.items.get(id).cantidad = event.target.value;
+  queueUpsert(state.items.get(id));
   clearInterval(state.quantityFocusTimer);
   state.quantityFocusTimer = null;
-  setSaveStatus('Cambios pendientes por guardar.');
+  markDirty();
 });
 $('listaProductos')?.addEventListener('keydown', (event) => {
   if (event.key !== 'Enter' || !event.target.dataset.edit) return;
@@ -421,9 +570,10 @@ $('confirmarEliminarProductoConteo')?.addEventListener('click', () => {
 function deletePendingProduct() {
   if (!state.pendingDeleteId) return;
   state.items.delete(state.pendingDeleteId);
+  queueRemove(state.pendingDeleteId);
   state.pendingDeleteId = null;
   renderList();
-  setSaveStatus('Cambios pendientes por guardar.');
+  markDirty();
 }
 
 function updateActiveOperationHeader(text) {
@@ -458,108 +608,6 @@ function showManualSaveModal() {
   state.saveModalTimer = setTimeout(() => modal.hide(), 5000);
 }
 
-async function startScanner() {
-  if (!('mediaDevices' in navigator) || !navigator.mediaDevices.getUserMedia) {
-    showMessage('Este navegador no permite usar la camara.', 'warning');
-    return;
-  }
-
-  if (!('BarcodeDetector' in window)) {
-    showMessage('Este navegador no soporta lectura QR/codigo. Use Chrome o Edge actualizado.', 'warning');
-    return;
-  }
-
-  const modalElement = $('modalEscanerProducto');
-  const video = $('videoEscanerProducto');
-  const status = $('estadoEscanerProducto');
-  if (!modalElement || !video || !status || !window.bootstrap) {
-    showMessage('No se pudo abrir el escaner.', 'danger');
-    return;
-  }
-
-  try {
-    status.textContent = 'Solicitando camara...';
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: 'environment' },
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-      },
-      audio: false,
-    });
-    state.scannerStream = stream;
-    video.srcObject = stream;
-    await video.play();
-
-    const modal = window.bootstrap.Modal.getOrCreateInstance(modalElement);
-    modal.show();
-    status.textContent = 'Apunte la camara al codigo.';
-    scanLoop(new window.BarcodeDetector({
-      formats: ['qr_code', 'code_128', 'code_39', 'code_93', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'itf'],
-    }));
-  } catch (error) {
-    stopScanner();
-    status.textContent = 'No se pudo abrir la camara.';
-    showMessage('Permita el acceso a la camara para escanear.', 'danger');
-  }
-}
-
-function scanLoop(detector) {
-  const video = $('videoEscanerProducto');
-  const status = $('estadoEscanerProducto');
-  state.scannerActive = true;
-
-  const scan = async () => {
-    if (!state.scannerActive || !video) return;
-    try {
-      const codes = await detector.detect(video);
-      if (codes.length > 0) {
-        const value = (codes[0].rawValue || '').trim();
-        if (value !== '') {
-          if (status) status.textContent = `Codigo detectado: ${value}`;
-          applyScannedCode(value);
-          return;
-        }
-      }
-    } catch (error) {
-      if (status) status.textContent = 'No se pudo leer el codigo. Ajuste la distancia.';
-    }
-
-    state.scannerTimer = setTimeout(scan, 250);
-  };
-
-  scan();
-}
-
-function applyScannedCode(value) {
-  const input = $('buscarProducto');
-  if (input) {
-    input.value = value;
-    toggleSearchClear();
-    buscarProductos(value);
-  }
-  const modalElement = $('modalEscanerProducto');
-  if (modalElement && window.bootstrap) {
-    window.bootstrap.Modal.getOrCreateInstance(modalElement).hide();
-  }
-  stopScanner();
-}
-
-function stopScanner() {
-  state.scannerActive = false;
-  clearTimeout(state.scannerTimer);
-  state.scannerTimer = null;
-  if (state.scannerStream) {
-    state.scannerStream.getTracks().forEach((track) => track.stop());
-    state.scannerStream = null;
-  }
-  const video = $('videoEscanerProducto');
-  if (video) {
-    video.pause();
-    video.srcObject = null;
-  }
-}
-
 function formatTime(date) {
   return date.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
 }
@@ -581,8 +629,12 @@ function clearSearch() {
   toggleSearchClear();
 }
 
-setInterval(() => guardarBorrador(true), 30000);
-$('modalEscanerProducto')?.addEventListener('hidden.bs.modal', stopScanner);
+const autosaveIntervalMs = 120000 + Math.floor(Math.random() * 60000);
+const autosaveInitialDelayMs = Math.floor(Math.random() * 60000);
+setTimeout(() => {
+  setInterval(() => guardarBorrador(true), autosaveIntervalMs);
+}, autosaveInitialDelayMs);
+recoverLocalDraftIfNeeded();
 renderNombrePreview();
 renderList();
 toggleSearchClear();

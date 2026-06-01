@@ -47,6 +47,7 @@ $actions = [
     'finalizar_conteo' => APP_PATH . '/actions/finalizar_conteo.php',
     'guardar_agencia' => APP_PATH . '/actions/guardar_agencia.php',
     'guardar_borrador' => APP_PATH . '/actions/guardar_borrador.php',
+    'guardar_cambios' => APP_PATH . '/actions/guardar_cambios.php',
     'generar_consolidado' => APP_PATH . '/actions/generar_consolidado.php',
     'habilitar_conteo_usuario' => APP_PATH . '/actions/habilitar_conteo_usuario.php',
     'importar_productos' => APP_PATH . '/actions/importar_productos.php',

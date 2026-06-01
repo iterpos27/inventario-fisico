@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once APP_INCLUDES_PATH . '/product_codes.php';
 require_once APP_INCLUDES_PATH . '/observability.php';
+require_once APP_INCLUDES_PATH . '/search_cache.php';
 
 final class ProductImportReadFilter implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter
 {
@@ -177,6 +178,7 @@ function product_import_process_job(PDO $pdo, int $jobId, int $chunkSize = 800):
         $stmt->execute([$nextRow, $procesados, $insertados, $actualizados, $omitidos, $errores, $status, $status, $jobId]);
         if ($finished) {
             @unlink((string) $job['archivo']);
+            search_cache_invalidate();
             audit_log($pdo, 'import_completed', 'productos', $jobId, ['procesados' => $procesados]);
         }
         monitor_duration($pdo, 'product_import_chunk', $startedAt, 1500, ['job_id' => $jobId, 'rows' => $endRow - $currentRow + 1]);

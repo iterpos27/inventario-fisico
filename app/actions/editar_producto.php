@@ -3,6 +3,7 @@ require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once APP_INCLUDES_PATH . '/auth.php';
 require_once APP_INCLUDES_PATH . '/observability.php';
 require_once APP_INCLUDES_PATH . '/product_codes.php';
+require_once APP_INCLUDES_PATH . '/search_cache.php';
 require_admin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?? null)) {
@@ -22,6 +23,7 @@ if ($id <= 0 || $codigo === '' || $descripcion === '') {
 try {
     $stmt = $pdo->prepare('UPDATE productos SET codigo = ?, descripcion = ?, estado = 1 WHERE id = ?');
     $stmt->execute([$codigo, $descripcion, $id]);
+    search_cache_invalidate();
     audit_log($pdo, 'update', 'producto', $id, ['codigo' => $codigo]);
     header('Location: ' . page_url('productos', ['msg' => 'Producto actualizado correctamente']));
 } catch (Throwable $exception) {

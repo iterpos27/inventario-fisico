@@ -166,6 +166,7 @@ function ensure_schema(PDO $pdo): void
             CONSTRAINT fk_detalle_conteo FOREIGN KEY (conteo_id) REFERENCES conteos(id) ON DELETE CASCADE,
             CONSTRAINT fk_detalle_producto FOREIGN KEY (producto_id) REFERENCES productos(id),
             UNIQUE KEY uq_conteo_producto (conteo_id, producto_id),
+            INDEX idx_detalle_conteo (conteo_id),
             INDEX idx_detalle_codigo (codigo),
             INDEX idx_detalle_producto (producto_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
@@ -305,6 +306,7 @@ function ensure_schema(PDO $pdo): void
     ensure_index_exists($pdo, 'productos', 'idx_productos_fulltext_descripcion', 'FULLTEXT KEY idx_productos_fulltext_descripcion (descripcion)');
     ensure_index_exists($pdo, 'conteos', 'idx_conteos_toma', 'INDEX idx_conteos_toma (toma_id)');
     ensure_index_exists($pdo, 'conteos', 'idx_conteos_usuario_estado', 'INDEX idx_conteos_usuario_estado (usuario_id, estado)');
+    ensure_index_exists($pdo, 'conteo_detalle', 'idx_detalle_conteo', 'INDEX idx_detalle_conteo (conteo_id)');
     ensure_index_exists($pdo, 'conteo_detalle', 'idx_detalle_producto', 'INDEX idx_detalle_producto (producto_id)');
     ensure_index_exists($pdo, 'toma_usuarios', 'idx_toma_usuarios_usuario_estado', 'INDEX idx_toma_usuarios_usuario_estado (usuario_id, estado)');
 
