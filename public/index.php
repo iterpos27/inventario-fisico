@@ -68,6 +68,7 @@ $apiRoutes = [
     'detalle_conteo' => APP_PATH . '/api/detalle_conteo.php',
     'productos' => APP_PATH . '/api/productos.php',
     'guardar_borrador' => APP_PATH . '/api/guardar_borrador.php',
+    'guardar_cambios' => APP_PATH . '/api/guardar_cambios.php',
     'finalizar_conteo' => APP_PATH . '/api/finalizar_conteo.php',
 ];
 

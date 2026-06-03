@@ -140,6 +140,22 @@ class ApiClient {
         conteoVersion;
   }
 
+  Future<int> guardarCambios({
+    required int conteoId,
+    required List<ConteoItem> upsert,
+    required List<int> remove,
+    required int conteoVersion,
+  }) async {
+    final data = await _post('/api/v1/guardar_cambios', {
+      'conteo_id': conteoId,
+      'conteo_version': conteoVersion,
+      'upsert': upsert.map((item) => item.toJson()).toList(),
+      'remove': remove,
+    });
+    return int.tryParse('${data['conteo_version'] ?? conteoVersion}') ??
+        conteoVersion;
+  }
+
   Future<String?> finalizarConteo(
       int conteoId, List<ConteoItem> items, int conteoVersion) async {
     final data = await _post('/api/v1/finalizar_conteo', {

@@ -33,6 +33,8 @@ class _ConteoScreenState extends State<ConteoScreen> {
   final List<ConteoItem> _items = [];
   final Map<int, TextEditingController> _cantidadControllers = {};
   final Map<int, FocusNode> _cantidadFocusNodes = {};
+  final Map<int, ConteoItem> _pendingUpsert = {};
+  final Set<int> _pendingRemove = {};
   Timer? _searchDebounce;
   Timer? _autosaveDebounce;
   Timer? _autosaveTimer;
@@ -47,6 +49,9 @@ class _ConteoScreenState extends State<ConteoScreen> {
   int _searchRequestId = 0;
   String _syncStatus = 'Guardado local';
   List<Producto> _resultados = [];
+
+  bool get _hasPendingServerChanges =>
+      _pendingUpsert.isNotEmpty || _pendingRemove.isNotEmpty;
 
   @override
   void initState() {
@@ -113,22 +118,36 @@ class _ConteoScreenState extends State<ConteoScreen> {
   }
 
   Future<void> _sincronizarBorrador({bool silent = false}) async {
-    if (_items.isEmpty || _autosaving) return;
+    if (_autosaving) return;
+    if (!_hasPendingServerChanges && (silent || _items.isEmpty)) return;
     if (mounted) {
       setState(() {
         _autosaving = true;
-        _syncStatus = 'Autoguardando...';
+        _syncStatus = silent ? 'Autoguardando...' : 'Guardando...';
       });
     }
     try {
-      _conteoVersion = await widget.api
-          .guardarBorrador(widget.conteoId, _items, _conteoVersion);
+      if (_hasPendingServerChanges) {
+        final upsertSnapshot = _pendingUpsert.values.map(_copyItem).toList();
+        final removeSnapshot = _pendingRemove.toList();
+        _conteoVersion = await widget.api.guardarCambios(
+          conteoId: widget.conteoId,
+          upsert: upsertSnapshot,
+          remove: removeSnapshot,
+          conteoVersion: _conteoVersion,
+        );
+        _confirmarCambiosSincronizados(upsertSnapshot, removeSnapshot);
+      } else {
+        _conteoVersion = await widget.api
+            .guardarBorrador(widget.conteoId, _items, _conteoVersion);
+      }
       await _store?.save(widget.conteoId, _items);
       if (!mounted) return;
       final now = TimeOfDay.now().format(context);
       setState(() {
-        _pendingSync = false;
-        _syncStatus = 'Autoguardado $now';
+        _pendingSync = _hasPendingServerChanges;
+        _syncStatus =
+            _pendingSync ? 'Pendiente de sincronizar' : 'Autoguardado $now';
       });
       if (!silent) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -151,6 +170,41 @@ class _ConteoScreenState extends State<ConteoScreen> {
       if (mounted) {
         setState(() => _autosaving = false);
       }
+    }
+  }
+
+  ConteoItem _copyItem(ConteoItem item) {
+    return ConteoItem(
+      productoId: item.productoId,
+      codigo: item.codigo,
+      descripcion: item.descripcion,
+      cantidad: item.cantidad,
+    );
+  }
+
+  void _markItemChanged(ConteoItem item) {
+    _pendingRemove.remove(item.productoId);
+    _pendingUpsert[item.productoId] = item;
+  }
+
+  void _markItemRemoved(int productoId) {
+    _pendingUpsert.remove(productoId);
+    _pendingRemove.add(productoId);
+  }
+
+  void _confirmarCambiosSincronizados(
+      List<ConteoItem> upsertSnapshot, List<int> removeSnapshot) {
+    for (final item in upsertSnapshot) {
+      final current = _pendingUpsert[item.productoId];
+      if (current != null &&
+          current.codigo == item.codigo &&
+          current.descripcion == item.descripcion &&
+          current.cantidad == item.cantidad) {
+        _pendingUpsert.remove(item.productoId);
+      }
+    }
+    for (final productoId in removeSnapshot) {
+      _pendingRemove.remove(productoId);
     }
   }
 
@@ -278,6 +332,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
       setState(() {
         final item = _items.removeAt(existingIndex);
         _items.insert(0, item);
+        _markItemChanged(item);
         _buscar.clear();
         _resultados = [];
         _syncQuantityFields();
@@ -294,7 +349,9 @@ class _ConteoScreenState extends State<ConteoScreen> {
     }
 
     setState(() {
-      _items.insert(0, ConteoItem.fromProducto(producto, 0));
+      final item = ConteoItem.fromProducto(producto, 0);
+      _items.insert(0, item);
+      _markItemChanged(item);
       _buscar.clear();
       _resultados = [];
       _syncQuantityFields();
@@ -333,6 +390,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
     );
     if (confirm != true) return;
     setState(() {
+      _markItemRemoved(item.productoId);
       _items.removeWhere((current) => current.productoId == item.productoId);
       _syncQuantityFields();
     });
@@ -347,6 +405,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
     final cantidad = double.tryParse(value.replaceAll(',', '.')) ?? 0;
     setState(() {
       item.cantidad = cantidad;
+      _markItemChanged(item);
     });
     _quantityFocusTimer?.cancel();
     await _guardarLocalYProgramarSync();
@@ -357,7 +416,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
   }
 
   Future<void> _guardar() async {
-    if (_items.isEmpty) {
+    if (_items.isEmpty && !_hasPendingServerChanges) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Agregue productos antes de guardar')),
       );
