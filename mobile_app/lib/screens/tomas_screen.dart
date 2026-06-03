@@ -40,23 +40,27 @@ class _TomasScreenState extends State<TomasScreen> {
   Future<void> _abrirToma(Toma toma) async {
     if (!toma.estaDisponible) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Esta toma no esta disponible para editar')),
+        const SnackBar(
+            content: Text('Esta toma no esta disponible para editar')),
       );
       return;
     }
 
     try {
-      final conteoId = toma.conteoId ?? await widget.api.iniciarConteo(toma.tomaId);
+      final conteoId =
+          toma.conteoId ?? await widget.api.iniciarConteo(toma.tomaId);
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => ConteoScreen(api: widget.api, toma: toma, conteoId: conteoId),
+          builder: (_) =>
+              ConteoScreen(api: widget.api, toma: toma, conteoId: conteoId),
         ),
       );
       _reload();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$error')));
     }
   }
 
@@ -94,9 +98,9 @@ class _TomasScreenState extends State<TomasScreen> {
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: ListView.separated(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 18),
               itemCount: tomas.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
                 final toma = tomas[index];
                 return Card(
@@ -104,7 +108,7 @@ class _TomasScreenState extends State<TomasScreen> {
                     borderRadius: BorderRadius.circular(8),
                     onTap: () => _abrirToma(toma),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -114,23 +118,35 @@ class _TomasScreenState extends State<TomasScreen> {
                                 child: Text(
                                   toma.numeroToma,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w900,
                                     color: Color(0xFF004080),
+                                    fontSize: 16,
                                   ),
                                 ),
                               ),
-                              _StatusBadge(text: toma.conteoEstado ?? toma.asignacionEstado),
+                              _StatusBadge(
+                                  text: toma.conteoEstado ??
+                                      toma.asignacionEstado),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Text(
                             toma.nombreToma,
                             maxLines: 4,
                             overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF101828),
+                              fontWeight: FontWeight.w700,
+                              height: 1.25,
+                            ),
                           ),
-                          if (toma.agencia != null && toma.agencia!.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Text('Agencia: ${toma.agencia}'),
+                          if (toma.agencia != null &&
+                              toma.agencia!.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            _InfoChip(
+                              icon: Icons.storefront_outlined,
+                              text: toma.agencia!,
+                            ),
                           ],
                         ],
                       ),
@@ -141,6 +157,42 @@ class _TomasScreenState extends State<TomasScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF2FF),
+        border: Border.all(color: const Color(0xFFC8DBF2)),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF1F5D9F)),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Color(0xFF004080),
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

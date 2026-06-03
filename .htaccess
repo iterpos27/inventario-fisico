@@ -2,6 +2,7 @@ RewriteEngine On
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 RewriteRule ^$ public/index.php [L]
 RewriteRule ^assets/(.*)$ public/assets/$1 [L]
+RewriteRule ^api/(.*)$ public/index.php [QSA,L]
 RewriteRule ^api/([^/.]+)/?$ public/index.php [QSA,L]
 RewriteRule ^actions/([^/.]+)/?$ public/index.php [QSA,L]
 RewriteRule ^actions/(.*)$ public/$1 [QSA,L]

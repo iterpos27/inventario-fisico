@@ -474,47 +474,159 @@ class _ConteoScreenState extends State<ConteoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Conteo ${widget.toma.numeroToma}')),
+      appBar: AppBar(
+        centerTitle: true,
+        title: Column(
+          children: [
+            Text(
+              'Iter',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: const Color(0xFF004080),
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
+            ),
+            const Text('Conteo'),
+          ],
+        ),
+      ),
       bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _saving ? null : _guardar,
-                  icon: const Icon(Icons.save_outlined),
-                  label: const Text('Borrador'),
-                ),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: Color(0xFFC8DBF2))),
+          ),
+          child: OutlinedButton.icon(
+            onPressed: _saving ? null : _guardar,
+            icon: const Icon(Icons.save_outlined, size: 16),
+            label: const Text('Guardar borrador'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(38),
+              textStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _saving ? null : _finalizar,
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Finalizar'),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 18),
               children: [
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    widget.toma.numeroToma,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: const Color(0xFF004080),
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    widget.toma.nombreToma,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF101828),
+                                      height: 1.25,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (_autosaving)
+                              const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            else
+                              Icon(
+                                _pendingSync
+                                    ? Icons.cloud_off_outlined
+                                    : Icons.cloud_done_outlined,
+                                size: 20,
+                                color: _pendingSync
+                                    ? const Color(0xFF946200)
+                                    : const Color(0xFF087443),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            if (widget.toma.agencia != null &&
+                                widget.toma.agencia!.isNotEmpty)
+                              _InfoPill(
+                                icon: Icons.storefront_outlined,
+                                text: widget.toma.agencia!,
+                              ),
+                            _InfoPill(
+                              icon: _pendingSync
+                                  ? Icons.sync_problem_outlined
+                                  : Icons.verified_outlined,
+                              text: _syncStatus,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        ElevatedButton.icon(
+                          onPressed: _saving ? null : _finalizar,
+                          icon:
+                              const Icon(Icons.check_circle_outline, size: 16),
+                          label: const Text('Finalizar conteo'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF198754),
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size.fromHeight(38),
+                            textStyle: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.toma.nombreToma,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                          'Buscar producto',
+                          style:
+                              Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    color: const Color(0xFF004080),
+                                    fontWeight: FontWeight.w900,
+                                  ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         Row(
                           children: [
                             Expanded(
@@ -522,7 +634,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
                                 controller: _buscar,
                                 textInputAction: TextInputAction.search,
                                 decoration: InputDecoration(
-                                  labelText: 'Codigo o descripcion',
+                                  hintText: 'Codigo o descripcion',
                                   prefixIcon: const Icon(Icons.search),
                                   suffixIcon: _searching
                                       ? const Padding(
@@ -569,13 +681,7 @@ class _ConteoScreenState extends State<ConteoScreen> {
                                 ?.copyWith(fontWeight: FontWeight.w800),
                           ),
                           ..._resultados.map(
-                            (producto) => ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(producto.codigo),
-                              subtitle: Text(producto.descripcion),
-                              trailing: const Icon(Icons.add_circle_outline),
-                              onTap: () => _addProducto(producto),
-                            ),
+                            _buildSearchResult,
                           ),
                         ],
                       ],
@@ -598,37 +704,6 @@ class _ConteoScreenState extends State<ConteoScreen> {
                       .bodyMedium
                       ?.copyWith(color: const Color(0xFF4E6380)),
                 ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    if (_autosaving)
-                      const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    else
-                      Icon(
-                        _pendingSync
-                            ? Icons.cloud_off_outlined
-                            : Icons.cloud_done_outlined,
-                        size: 16,
-                        color: _pendingSync
-                            ? const Color(0xFF946200)
-                            : const Color(0xFF087443),
-                      ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        _syncStatus,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(color: const Color(0xFF4E6380)),
-                      ),
-                    ),
-                  ],
-                ),
                 const SizedBox(height: 8),
                 if (_items.isEmpty)
                   const Card(
@@ -638,52 +713,178 @@ class _ConteoScreenState extends State<ConteoScreen> {
                     ),
                   )
                 else
-                  ..._items.map(
-                    (item) => Card(
-                      child: ListTile(
-                        title: Text(item.codigo),
-                        subtitle: Text(item.descripcion),
-                        trailing: SizedBox(
-                          width: 136,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: 78,
-                                child: TextField(
-                                  controller: _cantidadControllerFor(item),
-                                  focusNode: _cantidadFocusFor(item),
-                                  keyboardType:
-                                      const TextInputType.numberWithOptions(
-                                          decimal: true),
-                                  textAlign: TextAlign.center,
-                                  decoration: const InputDecoration(
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 10),
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  onChanged: (value) {
-                                    _actualizarCantidadItem(item, value);
-                                  },
-                                  onSubmitted: (_) =>
-                                      FocusScope.of(context).unfocus(),
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () => _eliminarItem(item),
-                                icon: const Icon(Icons.delete_outline),
-                                color: Theme.of(context).colorScheme.error,
-                                tooltip: 'Eliminar',
-                              ),
-                            ],
-                          ),
+                  ..._items.map(_buildCountItemCard),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildSearchResult(Producto producto) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => _addProducto(producto),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FBFF),
+            border: Border.all(color: const Color(0xFFD6E4F5)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      producto.codigo,
+                      style: const TextStyle(
+                        color: Color(0xFF004080),
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      producto.descripcion,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF26364A),
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.add_circle_outline, color: Color(0xFF1F5D9F)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCountItemCard(ConteoItem item) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(9),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              IconButton(
+                onPressed: () => _eliminarItem(item),
+                icon: const Icon(Icons.delete_outline),
+                color: Theme.of(context).colorScheme.error,
+                tooltip: 'Eliminar',
+                style: IconButton.styleFrom(
+                  side: BorderSide(color: Theme.of(context).colorScheme.error),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAF2FF),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        item.codigo,
+                        style: const TextStyle(
+                          color: Color(0xFF004080),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
                         ),
                       ),
                     ),
+                    const SizedBox(height: 6),
+                    Text(
+                      item.descripcion,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        height: 1.22,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 76,
+                child: TextField(
+                  controller: _cantidadControllerFor(item),
+                  focusNode: _cantidadFocusFor(item),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFF101828),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
                   ),
-              ],
+                  decoration: const InputDecoration(
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                  ),
+                  onChanged: (value) {
+                    _actualizarCantidadItem(item, value);
+                  },
+                  onSubmitted: (_) => FocusScope.of(context).unfocus(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF2FF),
+        border: Border.all(color: const Color(0xFFC8DBF2)),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF1F5D9F)),
+          const SizedBox(width: 5),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Color(0xFF004080),
+              fontWeight: FontWeight.w800,
+              fontSize: 11.5,
             ),
+          ),
+        ],
+      ),
     );
   }
 }

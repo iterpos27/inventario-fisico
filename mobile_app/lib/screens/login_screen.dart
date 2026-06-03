@@ -59,72 +59,126 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
+      appBar: AppBar(
+        centerTitle: true,
+        title: Column(
           children: [
-            const SizedBox(height: 48),
-            Container(
-              width: 72,
-              height: 72,
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: Color(0xFF004080),
-                shape: BoxShape.circle,
-              ),
-              child: const Text(
-                'CR',
-                style:
-                    TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-              ),
-            ),
-            const SizedBox(height: 24),
             Text(
               'Centro del Ruliman',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: const Color(0xFF004080),
+                    fontWeight: FontWeight.w900,
+                    height: 1,
                   ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Conteo de inventario',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 32),
-            TextField(
-              controller: _baseUrl,
-              decoration: const InputDecoration(
-                labelText: 'URL del servidor',
-                hintText: 'http://10.0.2.2/centro_ruliman_inventario',
+            const Text('Acceso'),
+          ],
+        ),
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(14, 18, 14, 18),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 34,
+                          height: 34,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEAF2FF),
+                            border: Border.all(color: const Color(0xFFC8DBF2)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.inventory_2_outlined,
+                            size: 18,
+                            color: Color(0xFF004080),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Sistema de inventario',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      color: const Color(0xFF004080),
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                              ),
+                              Text(
+                                'Ingrese sus credenciales',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: const Color(0xFF4E6380),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _baseUrl,
+                      decoration: const InputDecoration(
+                        labelText: 'URL del servidor',
+                        hintText: 'http://10.0.2.2/centro_ruliman_inventario',
+                        prefixIcon: Icon(Icons.link),
+                      ),
+                      keyboardType: TextInputType.url,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _usuario,
+                      decoration: const InputDecoration(
+                        labelText: 'Usuario',
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _password,
+                      decoration: const InputDecoration(
+                        labelText: 'Contrasena',
+                        prefixIcon: Icon(Icons.lock_outline),
+                      ),
+                      obscureText: true,
+                      onSubmitted: (_) => _loading ? null : _login(),
+                    ),
+                    const SizedBox(height: 18),
+                    ElevatedButton.icon(
+                      onPressed: _loading ? null : _login,
+                      icon: _loading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.login),
+                      label: const Text('Ingresar'),
+                    ),
+                  ],
+                ),
               ),
-              keyboardType: TextInputType.url,
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: _usuario,
-              decoration: const InputDecoration(labelText: 'Usuario'),
-              textInputAction: TextInputAction.next,
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: _password,
-              decoration: const InputDecoration(labelText: 'Contrasena'),
-              obscureText: true,
-              onSubmitted: (_) => _loading ? null : _login(),
-            ),
-            const SizedBox(height: 22),
-            ElevatedButton(
-              onPressed: _loading ? null : _login,
-              child: _loading
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Ingresar'),
             ),
           ],
         ),
