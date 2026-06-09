@@ -39,7 +39,17 @@ load_env_file(ROOT_PATH . DIRECTORY_SEPARATOR . '.env');
 function env_value(string $key, ?string $default = null): ?string
 {
     $value = getenv($key);
-    return $value === false ? $default : $value;
+    if ($value !== false) {
+        return $value;
+    }
+    if (array_key_exists($key, $_ENV)) {
+        return (string) $_ENV[$key];
+    }
+    if (array_key_exists($key, $_SERVER)) {
+        return (string) $_SERVER[$key];
+    }
+
+    return $default;
 }
 
 define('APP_NAME', 'CENTRO DEL RULIMAN');
